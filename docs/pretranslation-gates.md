@@ -131,6 +131,8 @@ Record tester, RPCS3 version, date, observed scene, actual results, notes and sc
 
 The production gate requires200 source instruction sites,240 existing data words/pointers,68 exact Latin/bracket metric pairs, complete helpers, the non-writable R-X mapping, exact paired SDAT and all1,884 scenarios at64-byte starts. Font-derived pairs and supplemental-code hashes are guarded; writable/partial/unrelated copies fail closed. Dialogue59488 remains original; production/bulk stay disabled without all24 genuine current-build observations.
 
+**Production-cutover readiness (offline):** an empty-change `production_engine.rebuild_image` projection already preserves all1,884 original payloads, uses64-byte appended starts, excludes diagnostic text and passes the cutover guard; deterministic SHA-256 **`3ea90c070ac9348f48d1f09625ef4a988723e4f552fe717daa9026d1ba4e7eca`**, 10,464,504 bytes. Evidence: `work/qa/production-readiness-2026-10-26.json`. The reported gate stays blocked by design until `build/english` is rebuilt with `manual-evidence.json`; do not copy the diagnostic or this projection into production to force it.
+
 `tools/production_engine.py` defaults to the paired UI template and copies approved native/UI code, data and strings, never diagnostic dialogue. Accepted growth `build/smoke` also stage `data.sdat`; an original-slot ELF must not share an output directory with a localized archive. Older builders retain explicit historical hashes. UI localization does not enable bulk scenario insertion or manufacture acceptance.
 
 
