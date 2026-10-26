@@ -1,0 +1,224 @@
+{
+  "source": "VNDB Kana character API",
+  "endpoint": "https://api.vndb.org/kana/character",
+  "method": "POST",
+  "title_id": "v90",
+  "title_url": "https://vndb.org/v90",
+  "retrieved_at": "2026-10-23T08:46:42+00:00",
+  "pages": [
+    {
+      "request": {
+        "filters": [
+          "vn",
+          "=",
+          [
+            "id",
+            "=",
+            "v90"
+          ]
+        ],
+        "fields": "name,original,aliases",
+        "sort": "id",
+        "results": 100,
+        "page": 1,
+        "count": true
+      },
+      "response": {
+        "count": 24,
+        "more": false,
+        "results": [
+          {
+            "aliases": [
+              "長瀬 由真",
+              "Nagase Yuma"
+            ],
+            "id": "c5317",
+            "name": "Tonami Yuma",
+            "original": "十波 由真"
+          },
+          {
+            "aliases": [
+              "タマお姉ちゃん",
+              "Tama-onee-chan",
+              "タマ姉",
+              "Tama-ane"
+            ],
+            "id": "c5318",
+            "name": "Kousaka Tamaki",
+            "original": "向坂 環"
+          },
+          {
+            "aliases": [],
+            "id": "c5319",
+            "name": "Sasamori Karin",
+            "original": "笹森 花梨"
+          },
+          {
+            "aliases": [],
+            "id": "c5320",
+            "name": "Yuzuhara Konomi",
+            "original": "柚原 このみ"
+          },
+          {
+            "aliases": [
+              "うー",
+              "Uu",
+              "たかちゃん",
+              "Taka-chan",
+              "たかりゃん",
+              "Taka-ryan",
+              "タカくん",
+              "Taka-kun",
+              "タカ坊",
+              "Takabou"
+            ],
+            "id": "c15061",
+            "name": "Kouno Takaaki",
+            "original": "河野 貴明"
+          },
+          {
+            "aliases": [],
+            "id": "c15062",
+            "name": "Komaki Manaka",
+            "original": "小牧 愛佳"
+          },
+          {
+            "aliases": [
+              "さんちゃん",
+              "San-chan"
+            ],
+            "id": "c15063",
+            "name": "Himeyuri Sango",
+            "original": "姫百合 珊瑚"
+          },
+          {
+            "aliases": [],
+            "id": "c15064",
+            "name": "Himeyuri Ruri",
+            "original": "姫百合 瑠璃"
+          },
+          {
+            "aliases": [
+              "Lucy Maria Misora",
+              "ルーシー・マリア・ミソラ"
+            ],
+            "id": "c15065",
+            "name": "Ruuko Kireinasora",
+            "original": "るーこ・きれいなそら"
+          },
+          {
+            "aliases": [
+              "さ～りゃん",
+              "Saaryan"
+            ],
+            "id": "c15068",
+            "name": "Kusugawa Sasara",
+            "original": "久寿川 ささら"
+          },
+          {
+            "aliases": [],
+            "id": "c15070",
+            "name": "Genjimaru",
+            "original": "ゲンジ丸"
+          },
+          {
+            "aliases": [
+              "Sakurakko",
+              "桜っ子"
+            ],
+            "id": "c15071",
+            "name": "Komaki Ikuno",
+            "original": "小牧 郁乃"
+          },
+          {
+            "aliases": [],
+            "id": "c15079",
+            "name": "Kouno Harumi",
+            "original": "河野 はるみ"
+          },
+          {
+            "aliases": [],
+            "id": "c15120",
+            "name": "Yuzuhara Haruka",
+            "original": "柚原 春夏"
+          },
+          {
+            "aliases": [
+              "Townsperson A"
+            ],
+            "id": "c15122",
+            "name": "Kousaka Yuuji",
+            "original": "向坂 雄二"
+          },
+          {
+            "aliases": [
+              "Ic-chan"
+            ],
+            "id": "c15124",
+            "name": "HMX-17a Ilfa",
+            "original": "HMX-17a イルファ"
+          },
+          {
+            "aliases": [
+              "まーりゃん",
+              "Maaryan"
+            ],
+            "id": "c15130",
+            "name": "Asagiri Maako",
+            "original": "朝霧 麻亜子"
+          },
+          {
+            "aliases": [
+              "よっち",
+              "Yocchi"
+            ],
+            "id": "c15131",
+            "name": "Yoshioka Chie",
+            "original": "吉岡 チエ"
+          },
+          {
+            "aliases": [
+              "ちゃる",
+              "Charu"
+            ],
+            "id": "c15132",
+            "name": "Yamada Michiru",
+            "original": "山田 ミチル"
+          },
+          {
+            "aliases": [],
+            "id": "c15133",
+            "name": "Satoko Nanako",
+            "original": "サトコ 菜々子"
+          },
+          {
+            "aliases": [
+              "Sylpha"
+            ],
+            "id": "c15134",
+            "name": "HMX-17c Silfa",
+            "original": "HMX-17c シルファ"
+          },
+          {
+            "aliases": [],
+            "id": "c15135",
+            "name": "Kagura Reona",
+            "original": "神楽 玲於奈"
+          },
+          {
+            "aliases": [],
+            "id": "c15136",
+            "name": "Kofu Kaoruko",
+            "original": "古風 薫子"
+          },
+          {
+            "aliases": [],
+            "id": "c15137",
+            "name": "Ezawa Kasumi",
+            "original": "江沢 カスミ"
+          }
+        ]
+      }
+    }
+  ]
+}

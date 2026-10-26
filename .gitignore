@@ -1,0 +1,26 @@
+# Proprietary inputs, extracted Japanese scripts, and reference translation
+/[[]ittaku-subs[]]th2/
+/EBOOT.elf
+/script/
+/reference/
+/rom/
+/work/
+/build/
+/dist/
+/release/
+/vendor/
+/.venv/
+__pycache__/
+*.pyc
+*.elf
+*.ELF
+*.BIN
+*.sdat
+*.dat
+*.pak
+*.PAK
+*.vcdiff
+*.exe
+*.sav
+*.state
+# VNDB source snapshots and glossary are deliberately trackable.

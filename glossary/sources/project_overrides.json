@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "english_name_order": "given-name-first for Japanese personal names",
+    "honorifics": "retain source honorifics; do not invent them",
+    "style_reference": "Local [ittaku-subs]th2/README.TXT, lines 115–120",
+    "canonical_names": "Keep exact VNDB names separate from project display names",
+    "unreviewed_ids": "Keep VNDB spelling and flag display_review_required until explicitly reviewed"
+  },
+  "characters": {
+    "c5317": {
+      "display_name": "Yuma Tonami",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c5318": {
+      "display_name": "Tamaki Kousaka",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c5319": {
+      "display_name": "Karin Sasamori",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c5320": {
+      "display_name": "Konomi Yuzuhara",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15061": {
+      "display_name": "Takaaki Kouno",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15062": {
+      "display_name": "Manaka Komaki",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15063": {
+      "display_name": "Sango Himeyuri",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15064": {
+      "display_name": "Ruri Himeyuri",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15065": {
+      "display_name": "Ruuko Kireinasora",
+      "reason": "Retain VNDB's canonical Ruuko Kireinasora order as a nonstandard-name exception; do not mechanically reverse it or substitute an alias."
+    },
+    "c15066": {
+      "display_name": "Yuuki Kusakabe",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15067": {
+      "display_name": "Mio Hanesaki",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15068": {
+      "display_name": "Sasara Kusugawa",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15070": {
+      "display_name": "Genjimaru",
+      "reason": "Mononym: retain the VNDB spelling without reordering."
+    },
+    "c15071": {
+      "display_name": "Ikuno Komaki",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15079": {
+      "display_name": "Harumi Kouno",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15120": {
+      "display_name": "Haruka Yuzuhara",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15122": {
+      "display_name": "Yuuji Kousaka",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15123": {
+      "display_name": "Genzou Nagase",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15124": {
+      "display_name": "Ilfa",
+      "reason": "Use the personal name Ilfa for the display name; the HMX-17a model identifier remains preserved in the canonical name and Japanese original."
+    },
+    "c15130": {
+      "display_name": "Maako Asagiri",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15131": {
+      "display_name": "Chie Yoshioka",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15132": {
+      "display_name": "Michiru Yamada",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15133": {
+      "display_name": "Nanako Satoko",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15134": {
+      "display_name": "Silfa",
+      "reason": "Use the VNDB canonical personal-name spelling Silfa for the display name, not the Sylpha alias; preserve HMX-17c in the source fields."
+    },
+    "c15135": {
+      "display_name": "Reona Kagura",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15136": {
+      "display_name": "Kaoruko Kofu",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15137": {
+      "display_name": "Kasumi Ezawa",
+      "reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling."
+    },
+    "c15138": {
+      "display_name": "Library Chairman",
+      "reason": "Role label rather than a Japanese personal name: retain the VNDB English label without reordering."
+    }
+  }
+}

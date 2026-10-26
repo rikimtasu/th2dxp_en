@@ -1,0 +1,482 @@
+{
+  "schema_version": 1,
+  "attribution": "Character name data from VNDB and its contributors; project display-name edits by this translation project.",
+  "license": {
+    "database": "Open Database License 1.0 (ODbL-1.0)",
+    "database_url": "https://opendatacommons.org/licenses/odbl/1.0/",
+    "contents": "Database Contents License 1.0 (DbCL-1.0)",
+    "contents_url": "https://opendatacommons.org/licenses/dbcl/1.0/",
+    "policy_url": "https://vndb.org/d17#4",
+    "attribution": "VNDB and its contributors",
+    "adaptation_notice": "This project merges v20/v90 name-only character records and adds separately identified project display names."
+  },
+  "policy": {
+    "english_name_order": "given-name-first for Japanese personal names",
+    "honorifics": "retain source honorifics; do not invent them",
+    "style_reference": "Local [ittaku-subs]th2/README.TXT, lines 115–120",
+    "canonical_names": "Keep exact VNDB names separate from project display names",
+    "unreviewed_ids": "Keep VNDB spelling and flag display_review_required until explicitly reviewed"
+  },
+  "sources": [
+    {
+      "title_id": "v20",
+      "title": "ToHeart2",
+      "title_url": "https://vndb.org/v20",
+      "endpoint": "https://api.vndb.org/kana/character",
+      "retrieved_at": "2026-10-23T08:46:42+00:00",
+      "character_count": 26,
+      "snapshot": "glossary/sources/v20.json"
+    },
+    {
+      "title_id": "v90",
+      "title": "ToHeart2 AnotherDays",
+      "title_url": "https://vndb.org/v90",
+      "endpoint": "https://api.vndb.org/kana/character",
+      "retrieved_at": "2026-10-23T08:46:42+00:00",
+      "character_count": 24,
+      "snapshot": "glossary/sources/v90.json"
+    }
+  ],
+  "characters": [
+    {
+      "id": "c5317",
+      "source_url": "https://vndb.org/c5317",
+      "japanese_original": "十波 由真",
+      "vndb_name": "Tonami Yuma",
+      "vndb_aliases": [
+        "長瀬 由真",
+        "Nagase Yuma"
+      ],
+      "project_display_name": "Yuma Tonami",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c5318",
+      "source_url": "https://vndb.org/c5318",
+      "japanese_original": "向坂 環",
+      "vndb_name": "Kousaka Tamaki",
+      "vndb_aliases": [
+        "タマお姉ちゃん",
+        "Tama-onee-chan",
+        "タマ姉",
+        "Tama-ane"
+      ],
+      "project_display_name": "Tamaki Kousaka",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c5319",
+      "source_url": "https://vndb.org/c5319",
+      "japanese_original": "笹森 花梨",
+      "vndb_name": "Sasamori Karin",
+      "vndb_aliases": [],
+      "project_display_name": "Karin Sasamori",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c5320",
+      "source_url": "https://vndb.org/c5320",
+      "japanese_original": "柚原 このみ",
+      "vndb_name": "Yuzuhara Konomi",
+      "vndb_aliases": [],
+      "project_display_name": "Konomi Yuzuhara",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15061",
+      "source_url": "https://vndb.org/c15061",
+      "japanese_original": "河野 貴明",
+      "vndb_name": "Kouno Takaaki",
+      "vndb_aliases": [
+        "うー",
+        "Uu",
+        "たかちゃん",
+        "Taka-chan",
+        "たかりゃん",
+        "Taka-ryan",
+        "タカくん",
+        "Taka-kun",
+        "タカ坊",
+        "Takabou"
+      ],
+      "project_display_name": "Takaaki Kouno",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15062",
+      "source_url": "https://vndb.org/c15062",
+      "japanese_original": "小牧 愛佳",
+      "vndb_name": "Komaki Manaka",
+      "vndb_aliases": [],
+      "project_display_name": "Manaka Komaki",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15063",
+      "source_url": "https://vndb.org/c15063",
+      "japanese_original": "姫百合 珊瑚",
+      "vndb_name": "Himeyuri Sango",
+      "vndb_aliases": [
+        "さんちゃん",
+        "San-chan"
+      ],
+      "project_display_name": "Sango Himeyuri",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15064",
+      "source_url": "https://vndb.org/c15064",
+      "japanese_original": "姫百合 瑠璃",
+      "vndb_name": "Himeyuri Ruri",
+      "vndb_aliases": [],
+      "project_display_name": "Ruri Himeyuri",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15065",
+      "source_url": "https://vndb.org/c15065",
+      "japanese_original": "るーこ・きれいなそら",
+      "vndb_name": "Ruuko Kireinasora",
+      "vndb_aliases": [
+        "Lucy Maria Misora",
+        "ルーシー・マリア・ミソラ"
+      ],
+      "project_display_name": "Ruuko Kireinasora",
+      "project_override_reason": "Retain VNDB's canonical Ruuko Kireinasora order as a nonstandard-name exception; do not mechanically reverse it or substitute an alias.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15066",
+      "source_url": "https://vndb.org/c15066",
+      "japanese_original": "草壁 優季",
+      "vndb_name": "Kusakabe Yuuki",
+      "vndb_aliases": [
+        "高城 優季",
+        "Takashiro Yuuki"
+      ],
+      "project_display_name": "Yuuki Kusakabe",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20"
+      ]
+    },
+    {
+      "id": "c15067",
+      "source_url": "https://vndb.org/c15067",
+      "japanese_original": "羽根崎 美緒",
+      "vndb_name": "Hanesaki Mio",
+      "vndb_aliases": [],
+      "project_display_name": "Mio Hanesaki",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20"
+      ]
+    },
+    {
+      "id": "c15068",
+      "source_url": "https://vndb.org/c15068",
+      "japanese_original": "久寿川 ささら",
+      "vndb_name": "Kusugawa Sasara",
+      "vndb_aliases": [
+        "さ～りゃん",
+        "Saaryan"
+      ],
+      "project_display_name": "Sasara Kusugawa",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15070",
+      "source_url": "https://vndb.org/c15070",
+      "japanese_original": "ゲンジ丸",
+      "vndb_name": "Genjimaru",
+      "vndb_aliases": [],
+      "project_display_name": "Genjimaru",
+      "project_override_reason": "Mononym: retain the VNDB spelling without reordering.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15071",
+      "source_url": "https://vndb.org/c15071",
+      "japanese_original": "小牧 郁乃",
+      "vndb_name": "Komaki Ikuno",
+      "vndb_aliases": [
+        "Sakurakko",
+        "桜っ子"
+      ],
+      "project_display_name": "Ikuno Komaki",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15079",
+      "source_url": "https://vndb.org/c15079",
+      "japanese_original": "河野 はるみ",
+      "vndb_name": "Kouno Harumi",
+      "vndb_aliases": [],
+      "project_display_name": "Harumi Kouno",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v90"
+      ]
+    },
+    {
+      "id": "c15120",
+      "source_url": "https://vndb.org/c15120",
+      "japanese_original": "柚原 春夏",
+      "vndb_name": "Yuzuhara Haruka",
+      "vndb_aliases": [],
+      "project_display_name": "Haruka Yuzuhara",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15122",
+      "source_url": "https://vndb.org/c15122",
+      "japanese_original": "向坂 雄二",
+      "vndb_name": "Kousaka Yuuji",
+      "vndb_aliases": [
+        "Townsperson A"
+      ],
+      "project_display_name": "Yuuji Kousaka",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15123",
+      "source_url": "https://vndb.org/c15123",
+      "japanese_original": "長瀬 源蔵",
+      "vndb_name": "Nagase Genzou",
+      "vndb_aliases": [
+        "ダニエル",
+        "Daniel"
+      ],
+      "project_display_name": "Genzou Nagase",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20"
+      ]
+    },
+    {
+      "id": "c15124",
+      "source_url": "https://vndb.org/c15124",
+      "japanese_original": "HMX-17a イルファ",
+      "vndb_name": "HMX-17a Ilfa",
+      "vndb_aliases": [
+        "Ic-chan"
+      ],
+      "project_display_name": "Ilfa",
+      "project_override_reason": "Use the personal name Ilfa for the display name; the HMX-17a model identifier remains preserved in the canonical name and Japanese original.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15130",
+      "source_url": "https://vndb.org/c15130",
+      "japanese_original": "朝霧 麻亜子",
+      "vndb_name": "Asagiri Maako",
+      "vndb_aliases": [
+        "まーりゃん",
+        "Maaryan"
+      ],
+      "project_display_name": "Maako Asagiri",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15131",
+      "source_url": "https://vndb.org/c15131",
+      "japanese_original": "吉岡 チエ",
+      "vndb_name": "Yoshioka Chie",
+      "vndb_aliases": [
+        "よっち",
+        "Yocchi"
+      ],
+      "project_display_name": "Chie Yoshioka",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15132",
+      "source_url": "https://vndb.org/c15132",
+      "japanese_original": "山田 ミチル",
+      "vndb_name": "Yamada Michiru",
+      "vndb_aliases": [
+        "ちゃる",
+        "Charu"
+      ],
+      "project_display_name": "Michiru Yamada",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15133",
+      "source_url": "https://vndb.org/c15133",
+      "japanese_original": "サトコ 菜々子",
+      "vndb_name": "Satoko Nanako",
+      "vndb_aliases": [],
+      "project_display_name": "Nanako Satoko",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15134",
+      "source_url": "https://vndb.org/c15134",
+      "japanese_original": "HMX-17c シルファ",
+      "vndb_name": "HMX-17c Silfa",
+      "vndb_aliases": [
+        "Sylpha"
+      ],
+      "project_display_name": "Silfa",
+      "project_override_reason": "Use the VNDB canonical personal-name spelling Silfa for the display name, not the Sylpha alias; preserve HMX-17c in the source fields.",
+      "display_review_required": false,
+      "memberships": [
+        "v90"
+      ]
+    },
+    {
+      "id": "c15135",
+      "source_url": "https://vndb.org/c15135",
+      "japanese_original": "神楽 玲於奈",
+      "vndb_name": "Kagura Reona",
+      "vndb_aliases": [],
+      "project_display_name": "Reona Kagura",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15136",
+      "source_url": "https://vndb.org/c15136",
+      "japanese_original": "古風 薫子",
+      "vndb_name": "Kofu Kaoruko",
+      "vndb_aliases": [],
+      "project_display_name": "Kaoruko Kofu",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15137",
+      "source_url": "https://vndb.org/c15137",
+      "japanese_original": "江沢 カスミ",
+      "vndb_name": "Ezawa Kasumi",
+      "vndb_aliases": [],
+      "project_display_name": "Kasumi Ezawa",
+      "project_override_reason": "Reorder the VNDB Japanese personal name to given-name-first; retain its romanization spelling.",
+      "display_review_required": false,
+      "memberships": [
+        "v20",
+        "v90"
+      ]
+    },
+    {
+      "id": "c15138",
+      "source_url": "https://vndb.org/c15138",
+      "japanese_original": "図書 委員長",
+      "vndb_name": "Library Chairman",
+      "vndb_aliases": [
+        "Tosho Iinchou"
+      ],
+      "project_display_name": "Library Chairman",
+      "project_override_reason": "Role label rather than a Japanese personal name: retain the VNDB English label without reordering.",
+      "display_review_required": false,
+      "memberships": [
+        "v20"
+      ]
+    }
+  ]
+}

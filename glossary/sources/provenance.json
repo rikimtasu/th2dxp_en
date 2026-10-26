@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "license": {
+    "database": "Open Database License 1.0 (ODbL-1.0)",
+    "database_url": "https://opendatacommons.org/licenses/odbl/1.0/",
+    "contents": "Database Contents License 1.0 (DbCL-1.0)",
+    "contents_url": "https://opendatacommons.org/licenses/dbcl/1.0/",
+    "policy_url": "https://vndb.org/d17#4",
+    "attribution": "VNDB and its contributors",
+    "adaptation_notice": "This project merges v20/v90 name-only character records and adds separately identified project display names."
+  },
+  "license_retrieval": {
+    "url": "https://vndb.org/d17",
+    "retrieved_at": "2026-10-23T08:49:30+00:00",
+    "method": "Python urllib.request HTTPS GET",
+    "status": 200,
+    "statement": "All information on VNDB is made available under the Open Database License. Any rights in individual contents of the database are licensed under the Database Contents License.",
+    "relevant_exception": "Images, visual novel descriptions and character descriptions are gathered from various online sources and may be subject to separate license conditions. None of these fields are requested or included."
+  },
+  "api": {
+    "documentation_url": "https://api.vndb.org/kana",
+    "endpoint": "https://api.vndb.org/kana/character",
+    "authentication": "Public endpoint; no token used",
+    "usage_terms": "Free for non-commercial use; best-effort service; subject to VNDB data license and API rate limits.",
+    "query_scope": "Per-title VN filters for v20 and v90; only name,original,aliases fields; complete paginated results sorted by stable ID.",
+    "initial_retrieval_note": "The web-reader requests for VNDB pages returned HTTP 503; direct Python urllib Kana POST requests succeeded. Direct urllib GET also retrieved the licensing page.",
+    "excluded_data": [
+      "descriptions",
+      "traits",
+      "roles",
+      "images",
+      "relationships",
+      "unrelated visual novel memberships"
+    ]
+  },
+  "style_reference": {
+    "local_path": "[ittaku-subs]th2/README.TXT",
+    "line_range": [
+      115,
+      120
+    ],
+    "observed_policy": "Ittaku retains Japanese honorifics and places given names first in English.",
+    "use_limit": "Style evidence only. Project display spellings are editorial decisions from the VNDB names, not a claim of script-level verification against Ittaku."
+  }
+}

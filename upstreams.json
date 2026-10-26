@@ -1,0 +1,27 @@
+{
+  "TH2DXP_KIT": {
+    "url": "https://github.com/hiroshil/TH2DXP_KIT.git",
+    "revision": "bbf9bedbde1c17c5a0b07aa77b711941da0397c3",
+    "role": "Scenario codec and DAT/TPL asset tools"
+  },
+  "fan-translation-template": {
+    "url": "https://github.com/minhnhattonthat/fan-translation-template.git",
+    "revision": "358e4ecba3af401ab91b399aeb5e7958f56b5fe3",
+    "role": "Workspace, glossary, decisions, status and font documentation conventions"
+  },
+  "translate-retro-game": {
+    "url": "https://github.com/minhnhattonthat/translate-retro-game.git",
+    "revision": "6719b115a881dc07102397fc9cba8c66d2dc4d0c",
+    "role": "Identity, extraction, marker, translation and QA workflow; no PS3 emulator harness"
+  },
+  "make_npdata": {
+    "url": "https://github.com/VelocityRa/make_npdata.git",
+    "revision": "933f79d9e34f874bd23d25b3e14ca2dc3e43f9fb",
+    "role": "Standalone large-file SDAT recovery, GPL-3.0; never invokes RPCS3"
+  },
+  "th2xr-portable": {
+    "url": "https://github.com/ripdog/th2xr-portable.git",
+    "revision": "14e8521ca999dfa9787b090c1c965ef3c6227530",
+    "role": "GPL-2.0 PC scenario/bytecode reference; separate headless inspector only, not a PS3 engine or translation licence"
+  }
+}
