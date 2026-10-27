@@ -83,6 +83,7 @@ python -X utf8 tools/base_game_inventory.py --check
 - `tools/build_sdat_tool.py`, `tools/sdat_pack.c`: separately licensed exact-source packer repairs and strict SDAT authentication; build outside `vendor/`, retain the original decryptor and failed artifacts.
 - `tools/alignment_candidates.py`: source-bound **base-message-only** review queue at `work/alignment/base-game-message-candidates/`; requires fresh complete membership and immutable baseline hashes. Candidates are not import approval, route feasibility or choice alignment.
 - `docs/pretranslation-gates.md`, `docs/manual-testing.md`: current diagnostic artifact, exact remaining cases and evidence procedure; prefer these over historical status entries.
+- `TRANSLATING.md`: translator-facing walkthrough (own dump → `tools/ps3_self.py` decrypt → `extract` → edit `translated_text` → `check`/`build` → `patch_game.py`). Keep it short and honest; put engineering detail in `docs/`.
 - `docs/re/README.md`, `docs/fonts.md`, `docs/rebuild-capacity.md`: native-format/layout findings and limitations. Workflow reference: `vendor/translate-retro-game/skills/translate-retro-game/SKILL.md`; PS3 manual-QA deviations take precedence.
 
 Update `docs/status.md` after work; record changed decisions/limitations honestly. Do not claim translated coverage, runtime verification, redistribution permission or a release without evidence.

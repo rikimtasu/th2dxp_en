@@ -165,6 +165,45 @@ class SelfDecryptorTests(unittest.TestCase):
                 ps3_self.decrypt_file(source, target, expected_sha256="0" * 64)
             self.assertFalse(target.exists())
 
+    def test_cli_writes_the_elf_beside_the_self_and_refuses_overwrite(self):
+        import contextlib
+        import io
+        import json
+        import tempfile
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = root / "EBOOT.BIN"
+            source.write_bytes(wrap_self(self.elf))
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(ps3_self.main([str(source)]), 0)
+            target = root / "EBOOT.elf"
+            self.assertEqual(target.read_bytes(), self.elf)
+            self.assertEqual(json.loads(out.getvalue())["output_sha256"],
+                             hashlib.sha256(self.elf).hexdigest())
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                ps3_self.main([str(source)])
+            replaced = root / "custom.elf"
+            replaced.write_bytes(b"stale")
+            with contextlib.redirect_stdout(io.StringIO()):
+                ps3_self.main([str(source), "-o", str(replaced), "--force"])
+            self.assertEqual(replaced.read_bytes(), self.elf)
+
+    def test_cli_refuses_a_missing_file_and_the_wrong_pin(self):
+        import contextlib
+        import io
+        import tempfile
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            with self.assertRaisesRegex(ValueError, "No such file"):
+                ps3_self.main([str(root / "absent.BIN")])
+            source = root / "EBOOT.BIN"
+            source.write_bytes(wrap_self(self.elf))
+            with self.assertRaisesRegex(ValueError, "does not match the pinned"), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                ps3_self.main([str(source), "--expect-sha256", "0" * 64])
+            self.assertFalse((root / "EBOOT.elf").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

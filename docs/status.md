@@ -1,5 +1,11 @@
 # Status — 2026-10-27
 
+## Translator guide and a self-service decrypt — 2026-10-27
+
+- **`TRANSLATING.md`** is a new end-to-end guide for someone working from their own dump: decrypt, `extract`, edit `translated_text`, `check`/`build`, install with `tools/patch_game.py`. It carries the fragment/control/CP932 rules, explains the `exceeds original` error honestly (rephrase to a complete line that fits; growth stays gated on accepted evidence), documents the LinguaGacha round trip, and says plainly that an executable-only build keeps the retail `data.sdat`, so menus stay Japanese and Latin letters use the game's original ASCII cells.
+- **`tools/ps3_self.py` gained a CLI** (`python -X utf8 tools/ps3_self.py <…>/EBOOT.BIN -o EBOOT.elf`), so the dump step no longer needs RPCS3, an external decryptor or any key handling beyond the retail pair already disclosed in `NOTICE.md`. It refuses to overwrite an existing target and can pin the expected SHA-256. Verified read-only against the installed retail SELF: 6,598,772 bytes in, 6,596,336 bytes out, `8d8bc60d…` — the hash pinned in `project.json`. 2 synthetic CLI tests; the suite is **224 tests OK**.
+- **`README.md` was rewritten for humans**: what the project is, install in four steps, how to translate, a six-row repository map, and a short status section that keeps the unverified claims explicit. The reverse-engineering, capacity and gate detail now lives in the linked docs instead of being duplicated in the README.
+
 ## v0.1 self-contained installer — 2026-10-27
 
 - The release asset is now **`dist/th2dxp_patch_gui.exe`**, a 38,050,630-byte PyInstaller one-file **windowed** program (SHA-256 `587aa6ea66b71c5ff4dc8aa5e0fa9eb74866d59b0f9451c70bef3591611e4d9f`). It needs no Python, no build directory and no pre-decrypted `EBOOT.elf`: given the folder installed in RPCS3 it decrypts the game's own `EBOOT.BIN` and `data.sdat`, applies the hash-pinned patch, verifies every result, and writes the files in place only after recording byte-exact backups. `--self-test` and `--version` both exit 0 on the frozen build.

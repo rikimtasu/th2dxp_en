@@ -225,3 +225,42 @@ def decrypt_file(source, target, *, expected_sha256=None) -> dict:
             "output_size": len(image), "output_sha256": digest,
             "program_type": header["program_type"], "revision": header["flags"],
             "sceversion": f"{header['program_sceversion']:016x}"}
+
+
+def main(argv=None):
+    """``python -X utf8 tools/ps3_self.py <EBOOT.BIN>`` writes ``EBOOT.elf`` next to it."""
+    import argparse
+    import json
+    import sys
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(
+        description="Decrypt your own BLJM60381 EBOOT.BIN into the plain EBOOT.elf the "
+                    "extraction tools read. Nothing else is written and no game file changes.",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("source", type=Path,
+                        help="Your own installed PS3_GAME/USRDIR/EBOOT.BIN (read only)")
+    parser.add_argument("--output", "-o", type=Path, default=None,
+                        help="Target ELF (default: EBOOT.elf beside the source)")
+    parser.add_argument("--expect-sha256", default=None,
+                        help="Refuse an image whose SHA-256 differs from this pin")
+    parser.add_argument("--force", action="store_true",
+                        help="Replace an existing target file")
+    args = parser.parse_args(argv)
+    source = args.source
+    if not source.is_file():
+        raise ValueError(f"No such file: {source}")
+    target = args.output or source.with_suffix(".elf")
+    if target.exists() and not args.force:
+        raise ValueError(f"{target} already exists; pass --force to replace it")
+    print(json.dumps(decrypt_file(source, target, expected_sha256=args.expect_sha256), indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+
+    try:
+        raise SystemExit(main(sys.argv[1:]))
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"ERROR: {error}")
