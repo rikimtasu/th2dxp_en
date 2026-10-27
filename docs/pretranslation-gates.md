@@ -153,3 +153,27 @@ The83c58c0f screenshots reach HEND in gameplay but leave the newest backlog entr
 The historical62bdc049... ELF used unchanged c4898391... SDAT. Its form began null; later two screenshots report g/bottom-overflow failures while showing expanded backlog text. Its constructor/cache proof did not establish viewport access. The current distinct target above adds source-control within-record scrolling, actual position/colour submission checks, signed-coordinate boundary fixtures and close/reopen replay. These remain bounded CPU proofs, not GPU/controller/full-scheduler acceptance.
 
 Inter is canceled. The user subsequently approved GenInterfaceJP **Latin letters/digits**, superseding the comparison-only boundary;48px em/baseline37 keeps complete quantized ink inside the existing cells. Original Japanese/punctuation/private data remain intact. Font choice does not fix history navigation; the separate viewport correction does. See `docs/fonts.md` and the new smoke-report limitations.
+
+## The shipped v0.1 pair is not the gates-bound diagnostic pair — 2026-10-27
+
+The diagnostic artifact this page describes (`a15f4f08...` ELF with the
+`be72aa94...` archive) is still what `gates.py` binds through
+`ARTIFACTS["windows"]` and what `work/qa/gen-latin-reload-results-to-fill.json`
+collects 24 observations for. The deliverable pair is different and newer:
+`build/english-v0.1/EBOOT.elf` (`a31bdd83...`, 10,687,608 bytes) with
+`build/english-v0.1/assets/data.sdat` (`bbb932bf...`, 2,202,570,928 bytes).
+
+It differs in exactly two ways that matter on screen: 23 ASCII punctuation
+aliases are redrawn as narrow Latin cells (with their full-width counterparts
+following the same cells), and the six native default-name strings now read
+`Kouno Takaaki` / `Taka`. Everything else — engine template, wrapping, pagination,
+history, backlog scrolling, UI geometry — is the same code as the diagnostic
+pair, but the pixels differ, so **the 24 window fields for the diagnostic pair do
+not transfer to v0.1** and observations must be made on the artifact you intend
+to ship.
+
+Nothing here re-points the gate: making v0.1 the accepted pair means deliberately
+changing `gates.ARTIFACTS` and the evidence form, which this workspace has not
+done. Until then v0.1 stays an offline artifact with `manual_acceptance: null`
+and `runtime_verified: false`, and the installer refuses nothing on that basis —
+it only verifies that the files match the report they came with.
