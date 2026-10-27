@@ -9,7 +9,8 @@ an emulator for you.
 
 ## 1. Dump the script from your own copy
 
-Point the tool at the executable *inside your installed copy*. It only reads it.
+Run these from the repository root. Point the tool at the executable *inside your
+installed copy* — it only reads it.
 
 ```console
 python -X utf8 tools/ps3_self.py "D:/Games/…/PS3_GAME/USRDIR/EBOOT.BIN" -o EBOOT.elf
@@ -30,10 +31,11 @@ python -X utf8 tools/project.py extract
 
 You now have `script/`: **1,124 editable JSON files** — 1,009 dialogue scenarios
 plus 115 `script_####_choices.json` caption files — holding 154,838 records and
-183,446 text items. The base game is 885 of those scenarios; the rest are
-AnotherDays and inactive programs, extracted so nothing is silently dropped.
-Extraction checks the executable against the hash pinned in `project.json`, so a
-different revision or an already-patched image is refused instead of half-read.
+183,446 text items. Of the 1,009 dialogue files, 885 belong to the base game; the
+rest are AnotherDays and inactive programs, extracted so nothing is silently
+dropped. Extraction checks the executable against the hash pinned in
+`project.json`, so a different revision or an already-patched image is refused
+instead of half-read.
 
 Two notes:
 
@@ -44,7 +46,8 @@ Two notes:
 
 ## 2. What the files look like
 
-One file per scenario, one record per line of dialogue:
+One file per scenario. A record groups the fragments of one line of dialogue, and
+the engine stores each fragment as its own string (trimmed here for brevity):
 
 ```json
 {
@@ -75,6 +78,7 @@ One file per scenario, one record per line of dialogue:
 | Never reorder, add or delete items or files | `check` compares structure against the baseline and fails closed. |
 | Keep every control code | `\k`, `\n`, `\p0001`, name substitutions and `<…>` tags are engine commands. Move them to where they belong in your sentence; never invent a literal newline. |
 | Blank stays blank | An empty item is a carrier the game needs. |
+| Unfinished source stays unfinished | Translate exactly what is there — do not complete a sentence the Japanese leaves hanging. |
 | Plain CP932 only | The validator rejects anything the Japanese font cannot encode: accents, curly quotes, emoji, CJK punctuation the font lacks. Strict round-trip, not "encodable". |
 | Choices live in the `_choices.json` file | Edit `translated_text` there. The same bytes inside the parent file are immutable. |
 
