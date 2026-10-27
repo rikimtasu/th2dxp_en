@@ -130,6 +130,51 @@ class EngineTests(unittest.TestCase):
             patch_engine.apply(plan)
         self.assertEqual((self.usrdir / "data.sdat").read_bytes(), b"not the retail archive")
 
+    def test_alternate_source_is_verified_patched_and_restored(self):
+        alternate_dat = make_dat([("a.bin", b"C" * 8), ("b.bin", b"B" * 16)])
+        alternate_output = patched_dat(alternate_dat, {"b.bin": b"new" * 21})
+        alternate_sdat = make_sdat(alternate_dat)
+        manifest_path = self.patch / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["archive"]["source_variants"] = [{
+            "source_sdat_sha256": sha(alternate_sdat),
+            "source_dat_sha256": sha(alternate_dat),
+            "output_dat_sha256": sha(alternate_output),
+        }]
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.write(self.usrdir / "data.sdat", alternate_sdat)
+        self.assertEqual(self.plan()["blocked"], [])
+        self.install()
+        self.assertEqual((self.usrdir / "data.sdat").read_bytes()[144:], alternate_output)
+        self.assertEqual((self.usrdir / patch_game.BACKUP_DIRNAME / "data.sdat").read_bytes(),
+                         alternate_sdat)
+        patch_game.restore(self.usrdir, confirm=True)
+        self.assertEqual((self.usrdir / "data.sdat").read_bytes(), alternate_sdat)
+
+    def test_duplicate_variant_hash_is_rejected(self):
+        manifest = patch_data.load_manifest(self.patch)
+        spec = manifest["archive"]
+        spec["source_variants"] = [{key: spec[key] for key in
+                                    ("source_sdat_sha256", "source_dat_sha256",
+                                     "output_dat_sha256")}]
+        with self.assertRaisesRegex(ValueError, "Duplicate archive source variant"):
+            patch_engine.select_archive_spec(spec, spec["source_sdat_sha256"])
+
+    def test_alternate_source_still_rejects_wrong_decrypted_data(self):
+        alternate_sdat = make_sdat(make_dat([("a.bin", b"C" * 8), ("b.bin", b"B" * 16)]))
+        manifest_path = self.patch / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["archive"]["source_variants"] = [{
+            "source_sdat_sha256": sha(alternate_sdat),
+            "source_dat_sha256": "0" * 64,
+            "output_dat_sha256": "1" * 64,
+        }]
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.write(self.usrdir / "data.sdat", alternate_sdat)
+        with self.assertRaisesRegex(ValueError, "decrypted archive does not match"):
+            self.install()
+        self.assertEqual((self.usrdir / "data.sdat").read_bytes(), alternate_sdat)
+
     def test_an_executable_from_another_build_blocks_with_restore_advice(self):
         self.write(self.usrdir / "EBOOT.BIN", elf_like(b"other-build", 2048, seed=9))
         plan = self.plan()

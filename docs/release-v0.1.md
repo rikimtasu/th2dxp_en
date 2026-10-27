@@ -18,7 +18,7 @@ below.
 
 | File | Size | SHA-256 |
 | --- | ---: | --- |
-| `th2dxp_patch_gui.exe` | 38,050,630 | `587aa6ea66b71c5ff4dc8aa5e0fa9eb74866d59b0f9451c70bef3591611e4d9f` |
+| `th2dxp_patch_gui.exe` | 38,051,439 | `1471584620770e8e6624034764bd93551088148b4f42ce8f61d32582a8c997eb` |
 | `th2dxp_en-v0.1-installer.zip` | see the release page | see the release page |
 
 `th2dxp_patch_gui.exe` is a PyInstaller one-file **windowed** build of
@@ -62,8 +62,8 @@ You need your own lawful BLJM60381 dump installed in RPCS3. Then:
 1. Run `th2dxp_patch_gui.exe`. No arguments, no console window.
 2. Point it at the folder you installed in RPCS3 (the one containing
    `PS3_GAME`), or at `PS3_GAME\USRDIR` directly.
-3. Press *Check*: it hashes `EBOOT.BIN` and `data.sdat` and refuses anything
-   other than your original retail pair (or a previous install of this patch).
+3. Press *Check*: it hashes `EBOOT.BIN` and `data.sdat` and accepts only the
+   supported source archives or a previous recorded install of this patch.
 4. Press *Install* and confirm. It copies both originals byte-exactly into
    `USRDIR\.th2dxp-backup\`, journaling their hashes first, then decrypts,
    patches, re-encrypts, authenticates the new archive and reads it back.

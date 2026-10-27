@@ -169,6 +169,27 @@ def classify_archive(current, spec, journal):
     return "unknown"
 
 
+def select_archive_spec(spec, current):
+    """Select only an explicitly pinned source variant, retaining common edits."""
+    variants = spec.get("source_variants", [])
+    require(isinstance(variants, list), "Invalid archive source variants")
+    fields = {"source_sdat_sha256", "source_dat_sha256", "output_dat_sha256"}
+    hashes = {spec["source_sdat_sha256"]}
+    selected = spec
+    for variant in variants:
+        require(isinstance(variant, dict) and set(variant) == fields,
+                "Invalid archive source variant")
+        require(all(isinstance(variant[key], str) and len(variant[key]) == 64
+                    and all(c in "0123456789abcdef" for c in variant[key])
+                    for key in fields), "Invalid archive variant hash")
+        require(variant["source_sdat_sha256"] not in hashes,
+                "Duplicate archive source variant")
+        hashes.add(variant["source_sdat_sha256"])
+        if current == variant["source_sdat_sha256"]:
+            selected = {**spec, **variant}
+    return selected
+
+
 def plan(build, usrdir, progress=None):
     """Check one folder against the patch data without writing anything."""
     usrdir = patch_game.require_usrdir(usrdir)
@@ -212,6 +233,8 @@ def plan(build, usrdir, progress=None):
     else:
         archive["current_sha256"] = patch_game.sha256_file(
             sdat_path, _labelled(progress, f"Checking {patch_game.SDAT_NAME}"))
+        archive_spec = select_archive_spec(archive_spec, archive["current_sha256"])
+        manifest = {**manifest, "archive": archive_spec}
         archive["current_kind"] = classify_archive(archive["current_sha256"], archive_spec,
                                                    journal)
         archive["install"] = archive["current_kind"] != "patched"
