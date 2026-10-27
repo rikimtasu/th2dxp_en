@@ -5,7 +5,7 @@
   "source_eboot": "EBOOT.elf",
   "source_sha256": "8d8bc60d2b02d12f509a9a3ee9c126876ac8524d4f02c7871206aca9bd66e828",
   "source_size": 6596336,
-  "game_usrdir": "PS3_GAME/USRDIR",
+  "game_usrdir": "<your-game>/PS3_GAME/USRDIR",
   "script_dir": "script",
   "baseline_dir": "work/original-script",
   "output_eboot": "build/english/EBOOT.elf",

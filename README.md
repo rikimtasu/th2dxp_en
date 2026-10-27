@@ -1,6 +1,6 @@
 # ToHeart2 DX PLUS — English translation project
 
-Unofficial **PS3 / BLJM60381** English localization workspace, initialized from the supplied decrypted executable. This is a working extraction/editing/rebuild project, **not a completed English patch**. The current editable script is still Japanese. No RPCS3 process is launched by project tools, and the installed game is never patched automatically.
+Unofficial **PS3 / BLJM60381** English localization workspace, initialized from the supplied decrypted executable. The base-game dialogue is translated and an offline English artifact is staged (`build/english-v0.1/`), but **no runtime acceptance exists yet**: the 24 observation slots for the current engine build are still empty, so this is not yet a release-complete English patch. No RPCS3 process is launched by project tools, and the installed game is never patched automatically.
 
 Uses [TH2DXP_KIT](https://github.com/hiroshil/TH2DXP_KIT), with workspace conventions from [fan-translation-template](https://github.com/minhnhattonthat/fan-translation-template) and the phased workflow from [translate-retro-game](https://github.com/minhnhattonthat/translate-retro-game). Exact upstream revisions: [`upstreams.json`](upstreams.json).
 
@@ -29,7 +29,7 @@ Game inputs, extracted Japanese text, reference translation, builds, upstream ch
 3. Edit only `translated_text` values, then run `check` and `build`. Diagnostics/UI staging use their own documented inputs and refuse overwrites.
 4. For asset or live checks, set `game_usrdir` in `project.json` to your own `PS3_GAME/USRDIR`; do not point tools at a shared or installed copy while another process is using it.
 
-Exact output hashes depend on the pinned toolchain and your own inputs. Build reports record the hashes that were produced; no prebuilt patch, executable or archive is shipped.
+Exact output hashes depend on the pinned toolchain and your own inputs. Build reports record the hashes that were produced. Game-data-bearing outputs — the patched ELF, the repacked `data.sdat`, extracted Japanese and translated text — are never published; the only distributable artifact is the packaging tool itself (`dist/th2dxp_patch.exe`, built from `tools/patch_game.py`), which installs a build you produced locally.
 
 ## Commands
 
@@ -58,6 +58,12 @@ Choice companions are already prepared here: **1,335 captions in 115 `script_###
 
 `build` writes `build/english/EBOOT.elf` plus a report. Before complete manual acceptance, unchanged work remains source-identical; a zero-translation native-corrected build is still not an English release. Valid `work/qa/manual-evidence.json` selects full-length native VWF/appended capacity for ordinary check/build/smoke; invalid evidence fails closed. `--engine-growth` requires that acceptance explicitly. Production never copies diagnostic text. Preserve the staged native template/manifest. `identity` stays source-only. Offline `smoke` now exercises message and choice markers; before cutover it stages its capacity diagnostic separately without enabling production.
 
+## LinguaGacha export
+
+Original Japanese PS3 messages and choices are available privately as UTF-8 `name`/`message` JSON. Import `work/linguagacha-original/base-game/gt_input/` first (**885 files / 102,062 native items**); the separate complete set contains **1,122 files / 183,446 items**. Speaker names are deliberately empty until native bindings are verified. Preserve filenames, row order, blank carriers and inline controls. See [`docs/linguagacha.md`](docs/linguagacha.md) for conversion, output folders, mappings and verification limits. This is not automatic translation insertion or runtime acceptance.
+
+Translated `gt_output` is validated by `tools/import_gt_output.py` before any `script/` write (`--check` now reports `defect_count: 0` over all 885 base-game files), and a verified build pair is installed by `tools/patch_game.py` — or by the Python-free `dist/th2dxp_patch.exe` — which replaces `EBOOT.BIN` with the patched ELF, backs up the original SELF, and refuses an unrecognized `data.sdat`. The finished translation is staged as `build/english-v0.1/`: every changed payload is re-extracted from the assembled image and compared with `script/` (102,062 text items), 1,097 untouched payloads stay byte-identical, and the artifact carries the Latin/punctuation atlas plus the English default name `Kouno Takaaki`. Details and the exact order of operations are in [`docs/linguagacha.md`](docs/linguagacha.md#patching-a-test-installation).
+
 ## Editing and reference reuse
 
 1. Read [`glossary.md`](glossary.md) and [`docs/decisions.md`](docs/decisions.md). Names default to given-name-first; retain source honorifics. The glossary merges **28 unique VNDB character IDs**, **22 shared** between [ToHeart2 v20](https://vndb.org/v20) and [AnotherDays v90](https://vndb.org/v90). Membership is not a PS3-release cast guarantee.
@@ -76,7 +82,9 @@ To regenerate it, use the documented `index --patched-sdt` command. Bare `index`
 
 ## Manual testing and remaining boundaries
 
-Follow [`docs/manual-testing.md`](docs/manual-testing.md). **You launch RPCS3 manually.** Outputs are decrypted ELFs, not signed/encrypted SELF files; do not blindly overwrite `EBOOT.BIN`. No runtime boot, layout, save compatibility, route reachability or font-width verification is claimed by offline checks.
+Follow [`docs/manual-testing.md`](docs/manual-testing.md). **You launch RPCS3 manually.** Builds are decrypted ELFs, not signed/encrypted SELF files. `tools/patch_game.py` (or `dist/th2dxp_patch.exe`) is the only supported way to install one: it copies the patched ELF **as `EBOOT.BIN`** — the form RPCS3 boots — after backing the original SELF up byte-exactly under `USRDIR/.th2dxp-backup/`, and `restore` puts it back. Do not overwrite `EBOOT.BIN` by hand. No runtime boot, layout, save compatibility, route reachability or font-width verification is claimed by offline checks.
+
+Current staged pair: `build/english-v0.1/EBOOT.elf` (`a31bdd83…`) with `assets/data.sdat` (`bbb932bf…`). If your USRDIR holds an older diagnostic archive (for example `be72aa94…`), the patcher refuses to replace it: restore your own pristine `data.sdat` (SHA-256 `4509a4e9…`, 2,185,195,888 bytes) first.
 
 The asset-decryption prerequisite is **cleared**: `work/assets/data.dat` contains 3,516 entries recovered read-only using a pinned standalone SDAT utility. Original font atlases were extracted and Latin glyph pixels visually inspected; runtime glyph mapping/spacing still needs manual proof. See [`docs/fonts.md`](docs/fonts.md), [`docs/rebuild-capacity.md`](docs/rebuild-capacity.md) and [`docs/status.md`](docs/status.md).
 
