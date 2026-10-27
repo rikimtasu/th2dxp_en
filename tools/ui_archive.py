@@ -40,13 +40,20 @@ def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _reject_installed(path: Path) -> None:
+def _installed_root():
+    """The operator's configured installation, or None when project.json has none."""
     config_path = ROOT / "project.json"
-    if config_path.is_file():
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-        installed = Path(config["game_usrdir"]).resolve()
-        if _inside(path, installed):
-            raise ValueError("Staging must not target installed game paths")
+    if not config_path.is_file():
+        return None
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    value = str(config.get("game_usrdir") or "").strip()
+    return Path(value).resolve() if value else None
+
+
+def _reject_installed(path: Path) -> None:
+    installed = _installed_root()
+    if installed is not None and _inside(path, installed):
+        raise ValueError("Staging must not target installed game paths")
 
 
 def _inside(path: Path, parent: Path) -> bool:
@@ -329,16 +336,22 @@ def stage(replacements: dict[str, bytes], output_dir: Path, *,
         raise ValueError("Staging directory must be a new child of build/ or work/ui-staging/")
     if _inside(output_dir, (ROOT / "build/typography-probe").resolve()):
         raise ValueError("Native typography base build is immutable")
-    config = json.loads((ROOT / "project.json").read_text(encoding="utf-8"))
-    installed = Path(config["game_usrdir"]).resolve()
-    if _inside(output_dir, installed) or _inside(installed, output_dir):
+    installed = _installed_root()
+    if installed is not None and (_inside(output_dir, installed) or _inside(installed, output_dir)):
         raise ValueError("Staging must not target installed game paths")
     if output_dir.exists():
         raise ValueError("Staging directory already exists; refusing overwrite")
     _validate_replacements(replacements)
     manifest_bytes = MANIFEST.read_bytes()
     manifest = json.loads(manifest_bytes)
-    original_sdat = (installed / "data.sdat") if source_sdat is None else Path(source_sdat).resolve()
+    if source_sdat is None:
+        if installed is None:
+            raise ValueError(
+                "No game_usrdir in project.json; add your own <game>/PS3_GAME/USRDIR path "
+                "or pass --source-sdat")
+        original_sdat = installed / "data.sdat"
+    else:
+        original_sdat = Path(source_sdat).resolve()
     full_archive_hash_rechecked = source_sdat is not None
     if full_archive_hash_rechecked and assets.sha(original_sdat) != manifest["source_sha256"]:
         raise ValueError("Explicit source SDAT SHA-256 differs from immutable decryption provenance")

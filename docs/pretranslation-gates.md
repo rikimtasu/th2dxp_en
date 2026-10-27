@@ -46,7 +46,7 @@ These steps document the already observed marker run. They are not a request to 
 
 
 1. Stop the current game; do not resume an old savestate.
-2. Manually copy `build/vwf-probe/EBOOT.elf` into a disposable copy of the game's `PS3_GAME/USRDIR/` as **`TH2_EN_VWF.elf`**. Do not replace `EBOOT.BIN`, source `EBOOT.elf` or previous diagnostic files. Project tools do not deploy anything.
+2. Manually copy `build/vwf-probe/EBOOT.elf` (relative to this checkout) into a disposable copy of the game's `PS3_GAME/USRDIR/` as **`TH2_EN_VWF.elf`**. Do not replace `EBOOT.BIN`, source `EBOOT.elf` or previous diagnostic files. Project tools do not deploy anything.
 3. Use **File → Boot (S)Elf → Boot SELF/ELF**, selecting that exact new file—not normal game-list launch. The decrypted ELF needs no SELF signing/conversion. Retain the boot-log path and build hash.
 4. Select **ToHeart2**, then New Game, not AnotherDays. The observed opening is native `010301000` / `script_0000.json`.
 5. Capture F01/F02, F07/F08 and F09 with its following Japanese before advancing; report any crash or layout difference immediately.

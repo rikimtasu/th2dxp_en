@@ -347,6 +347,16 @@ class SdatBoundaryTests(unittest.TestCase):
                     with self.subTest(output=output), self.assertRaisesRegex(ValueError, "directory|immutable"):
                         ui_archive.stage({"sys/title.tpl": b"x"}, output)
 
+    def test_installed_folder_is_operator_configuration_not_a_committed_path(self):
+        self.assertRaisesRegex(ValueError, "no game_usrdir", assets.configured_usrdir, {})
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "project.json").write_text(json.dumps({"game_usrdir": "  "}))
+            with patch.object(ui_archive, "ROOT", root):
+                self.assertIsNone(ui_archive._installed_root())
+                (root / "project.json").write_text(json.dumps({"game_usrdir": str(root / "game")}))
+                self.assertEqual(ui_archive._installed_root(), (root / "game").resolve())
+
 
 class SyntheticRoundtripTests(unittest.TestCase):
     """Mock only the external crypto boundary, not DAT assembly or SHA proof.

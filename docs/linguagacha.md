@@ -42,7 +42,9 @@ Outputs must be a new directory beneath `work/`; existing destinations are refus
 
 ## Patching a test installation
 
-`tools/patch_game.py` installs one verified build pair into a test `PS3_GAME/USRDIR`. The **user** runs it; it never launches RPCS3, never writes saves, and never deletes a backup. `dist/th2dxp_patch.exe` is the same tool frozen with PyInstaller, so no Python installation is needed:
+For v0.1 the end-user path is **`dist/th2dxp_patch_gui.exe`**, a single windowed program that needs no Python, no decrypted `EBOOT.elf` and no build directory. Point it at the folder you installed in RPCS3 (the one containing `PS3_GAME`) and press *Install*: it decrypts that folder's own `EBOOT.BIN` and `data.sdat`, applies the hash-pinned patch data it carries, verifies both results and only then writes them. The **user** runs it; it never launches RPCS3, never writes saves, and never deletes a backup. `--self-test` (exit code 0) checks that the program found its own patch data and both pinned archive helpers; `--version` prints the version.
+
+`tools/patch_game.py` installs one **local** verified build pair into a test `PS3_GAME/USRDIR`, for development. `dist/th2dxp_patch.exe` is that tool frozen with PyInstaller:
 
 ```console
 python -X utf8 tools/patch_game.py status
@@ -51,11 +53,24 @@ python -X utf8 tools/patch_game.py apply --build build/english-v0.1 --apply  # w
 python -X utf8 tools/patch_game.py restore --apply
 ```
 
-- The target defaults to `game_usrdir` in `project.json`; override with `--game-dir <path>/PS3_GAME/USRDIR`.
+- The target is `--game-dir <path>/PS3_GAME/USRDIR`, or `game_usrdir` if you have added that key to `project.json`; no machine-specific default is committed.
 - `apply` refuses an ELF whose SHA-256 differs from its `EBOOT.report.json`, refuses an archive that does not match the pair declared by that report, and refuses to run while `rpcs3.exe` is active.
 - The patched executable is written **as `EBOOT.BIN`**, which is the form RPCS3 boots directly, so the game starts normally with no separate ELF selection. The original SELF is copied byte-exactly to `USRDIR/.th2dxp-backup/EBOOT.BIN` first and `restore` puts it back. Any old side-by-side `EBOOT_EN.elf` is removed.
 - `data.sdat` must keep its name, so it is backed up once under the same directory before replacement. An archive that already matches the staged pair is skipped instead of copied again, and an archive that is **neither** the pristine BLJM60381 file **nor** covered by a recorded backup is refused rather than overwritten. The first install needs roughly twice the 2.2 GB archive in free space.
 - `.th2dxp-en-patch.json` records every install, hash and backup. `restore` verifies the recorded backup hashes and only then writes.
+
+### The GUI installer's own flow
+
+`tools/patch_gui.py` drives `tools/patch_engine.py`, which uses `tools/ps3_self.py` for the executable and `tools/patch_data.py` for the data patch:
+
+1. hash `EBOOT.BIN` and `data.sdat` and refuse anything that is not the pristine pair (or the tool's own previous install),
+2. back both up once under `.th2dxp-backup` on the same volume, recording their hashes in the journal **before** anything is rebuilt,
+3. decrypt `EBOOT.BIN` with the single BLJM60381 application keyset, apply the 255 edit runs and the appended segment, and verify the pinned `a31bdd83…` hash,
+4. decrypt `data.sdat`, append the eleven pre-compressed atlas chunks, rewrite their eleven table rows, and verify the pinned `0438c3af…` DAT hash,
+5. re-encrypt, authenticate the new archive with `make_npdata-pack --verify`, then **decrypt it again** and require the same `0438c3af…` DAT — the container hash cannot be pinned because `forge_npd_title_hash` hashes the input DAT's path string into the NPD header, so a rebuild is content-identical but never byte-identical to the build machine's archive,
+6. move both verified files into place and record the install.
+
+Free space is checked against the peak of (backup + pristine DAT + patched DAT), (backup + patched DAT + new archive) and (backup + new archive + read-back DAT) plus 256 MiB — about 6.4 GiB on a first install; intermediate files live in `USRDIR/.th2dxp-work` and are removed on success or failure. A failure at any step leaves the installed game untouched.
 
 Patching installs a **staged artifact**; it does not create one and does not imply runtime acceptance.
 

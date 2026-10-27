@@ -71,11 +71,18 @@ def save_json(path, data):
         stream.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
 
-def sha256_file(path):
+def sha256_file(path, progress=None):
+    """Hash a file, reporting (done, total) bytes so a GUI can show progress."""
+    path = Path(path)
+    total = path.stat().st_size
     digest = hashlib.sha256()
-    with Path(path).open("rb") as stream:
+    done = 0
+    with path.open("rb") as stream:
         while chunk := stream.read(CHUNK):
             digest.update(chunk)
+            done += len(chunk)
+            if progress is not None:
+                progress(done, total)
     return digest.hexdigest()
 
 
@@ -94,13 +101,14 @@ def tool_root():
 def default_build(start=None):
     """Find the one obvious build directory, never guess between several."""
     start = Path(start or tool_root())
-    for candidate in (start, start / "build/english-v0.1", start.parent / "build/english-v0.1"):
+    for candidate in (start, start / "patch-data", start / "build/english-v0.1",
+                      start.parent / "patch-data", start.parent / "build/english-v0.1"):
         if (candidate / ELF_NAME).is_file() and (candidate / REPORT_NAME).is_file():
             return candidate
     raise ValueError("No build directory found; pass --build <dir> containing EBOOT.elf and EBOOT.report.json")
 
 
-def staged_pair(build):
+def staged_pair(build, progress=None):
     """Return verified ELF/SDAT files and hashes for one build, never a mixture."""
     build = Path(build).resolve()
     require(build.is_dir(), f"Build directory not found: {build}")
@@ -113,7 +121,7 @@ def staged_pair(build):
     report_path = build / REPORT_NAME
     require(report_path.is_file(), f"Build has no {REPORT_NAME}; refusing an unverified executable")
     report = load_json(report_path)
-    elf_sha256 = sha256_file(elf)
+    elf_sha256 = sha256_file(elf, _report(progress, "Checking the patched EBOOT"))
     require(elf_sha256 == report.get("output_sha256"),
             "EBOOT.elf does not match its report; rebuild instead of installing")
     result = {"build": build, "elf": elf, "elf_sha256": elf_sha256, "sdat": None,
@@ -131,7 +139,7 @@ def staged_pair(build):
         archive = build / "assets" / SDAT_NAME
         if not archive.is_file():
             return result
-    sdat_sha256 = sha256_file(archive)
+    sdat_sha256 = sha256_file(archive, _report(progress, "Checking the patch data.sdat"))
     require(sdat_sha256 == declared.get("sha256"),
             "data.sdat does not match the report; never mix an older archive with this ELF")
     result.update(sdat=archive, sdat_sha256=sdat_sha256)
@@ -163,19 +171,36 @@ def write_journal(usrdir, data):
     save_json(journal_path(usrdir), data)
 
 
+def resolve_usrdir(path):
+    """Accept the game folder, its PS3_GAME directory or USRDIR itself."""
+    path = Path(path).expanduser()
+    if path.is_file():
+        path = path.parent
+    for candidate in (path, path / "PS3_GAME" / "USRDIR", path / "USRDIR"):
+        if (candidate / GAME_ELF_NAME).is_file():
+            return candidate.resolve()
+    raise ValueError(f"Not a game USRDIR (no {GAME_ELF_NAME}): {path}")
+
+
 def require_usrdir(usrdir):
-    usrdir = Path(usrdir).resolve()
-    require(usrdir.is_dir(), f"USRDIR not found: {usrdir}")
-    require((usrdir / GAME_ELF_NAME).is_file(), f"Not a game USRDIR (no {GAME_ELF_NAME}): {usrdir}")
-    return usrdir
+    usrdir = Path(usrdir).expanduser()
+    require(usrdir.exists(), f"USRDIR not found: {usrdir}")
+    return resolve_usrdir(usrdir)
 
 
-def copy_verified(source, target, expected):
+def copy_verified(source, target, expected, progress=None):
     """Copy through a temporary sibling so a partial write never replaces a file."""
     source, target = Path(source), Path(target)
+    total = source.stat().st_size
     temporary = target.with_name(target.name + ".th2dxp-part")
     try:
-        shutil.copyfile(source, temporary)
+        done = 0
+        with source.open("rb") as reader, temporary.open("wb") as writer:
+            while chunk := reader.read(CHUNK):
+                writer.write(chunk)
+                done += len(chunk)
+                if progress is not None:
+                    progress(done, total)
         require(sha256_file(temporary) == expected, f"Copy verification failed for {target.name}")
         os.replace(temporary, target)
     finally:
@@ -199,39 +224,53 @@ def classify_sdat(path, digest=None):
     return "unknown"
 
 
-def backup_once(usrdir, name, journal, *, accepted=("pristine",)):
+def backup_once(usrdir, name, journal, *, accepted=("pristine",), expected_sha256=None,
+                progress=None):
     """Back up an original before the first replacement; never silently re-backup."""
     original = usrdir / name
     backup = usrdir / BACKUP_DIRNAME / name
     backups = journal.setdefault("backups", {})
-    current = sha256_file(original)
+    current = sha256_file(original, _report(progress, f"Checking {name}"))
     if name in backups:
         recorded = backups[name]["sha256"]
         require(backup.is_file(), f"Recorded backup for {name} is missing; refusing to continue")
-        require(sha256_file(backup) == recorded, f"Backup for {name} was modified; refusing to continue")
+        require(sha256_file(backup, _report(progress, f"Checking the {name} backup")) == recorded,
+                f"Backup for {name} was modified; refusing to continue")
         if current == recorded:
             return backup
         # Already patched earlier and the file changed again: the backup stays the
         # only original, so reset to it before a new verified install.
         require(backup.stat().st_size <= free_bytes(usrdir), f"Not enough free space to restore {name}")
-        copy_verified(backup, original, recorded)
+        copy_verified(backup, original, recorded, _report(progress, f"Restoring {name}"))
         return backup
-    kind = classify_sdat(original, current) if name == SDAT_NAME else "self"
+    if expected_sha256 is not None:
+        require(current == expected_sha256,
+                f"{name} is not the file this patch was built for; restore your own dump first")
+        kind = "pristine"
+    else:
+        kind = classify_sdat(original, current) if name == SDAT_NAME else "self"
     require(kind in accepted,
             f"{name} is not a file this tool will replace ({kind}). Restore your own dump first.")
     require(free_bytes(usrdir) >= original.stat().st_size * 2,
             f"Not enough free space to back up {name} ({original.stat().st_size} bytes) and install the new one")
     backup.parent.mkdir(parents=True, exist_ok=True)
-    copy_verified(original, backup, current)
+    copy_verified(original, backup, current, _report(progress, f"Backing up {name}"))
     backups[name] = {"sha256": current, "size": original.stat().st_size, "kind": kind}
     return backup
 
 
-def plan_install(build, usrdir):
+def _report(progress, label):
+    """Adapt a plain (done, total) callback to a labelled one."""
+    if progress is None:
+        return None
+    return lambda done, total: progress(label, done, total)
+
+
+def plan_install(build, usrdir, progress=None):
     usrdir = require_usrdir(usrdir)
-    pair = staged_pair(build)
+    pair = staged_pair(build, _report(progress, "Checking the patch files"))
     journal = read_journal(usrdir) or {"schema_version": 2, "backups": {}, "installs": []}
-    elf_current = sha256_file(usrdir / GAME_ELF_NAME)
+    elf_current = sha256_file(usrdir / GAME_ELF_NAME, _report(progress, "Checking EBOOT.BIN"))
     elf_magic = magic(usrdir / GAME_ELF_NAME)
     require(elf_magic in (ELF_MAGIC, SELF_MAGIC),
             f"{GAME_ELF_NAME} is neither a PS3 SELF nor a decrypted ELF; refusing to replace it")
@@ -245,10 +284,10 @@ def plan_install(build, usrdir):
     sdat = None
     if pair["sdat"] is not None:
         target = usrdir / SDAT_NAME
-        current = sha256_file(target) if target.is_file() else None
+        current = sha256_file(target, _report(progress, "Checking data.sdat")) if target.is_file() else None
         if current != pair["sdat_sha256"]:
             recorded = journal.get("backups", {}).get(SDAT_NAME)
-            kind = classify_sdat(target)
+            kind = classify_sdat(target, current)
             if kind == "unknown" and recorded is None:
                 raise ValueError(
                     f"{SDAT_NAME} in {usrdir} is neither the pristine BLJM60381 archive nor a file "
@@ -267,27 +306,31 @@ def plan_install(build, usrdir):
             "sdat_sha256": pair["sdat_sha256"],
             "actions": actions, "nothing_to_do": not actions,
             "legacy_file_to_remove": str(legacy) if legacy.is_file() else None,
-            "journal": journal, "pair": pair}
+            "_journal": journal, "_pair": pair}
 
 
-def apply(build, usrdir=None, *, confirm=False):
-    plan = plan_install(build, usrdir or default_usrdir())
-    journal = plan.pop("journal")
-    pair = plan.pop("pair")
-    plan["dry_run"] = not confirm
-    if not confirm:
-        plan["next"] = "Re-run with --apply to write; nothing was changed."
-        return plan
+def public_plan(plan):
+    """Strip the internal (non-JSON) planning state from a plan."""
+    return {key: value for key, value in plan.items() if not key.startswith("_")}
+
+
+def write_plan(plan, progress=None):
+    """Perform an already checked install plan; the caller owns confirmation."""
+    require("_journal" in plan and "_pair" in plan,
+            "Install plan was not produced by plan_install()")
     require(not rpcs3_running(), "RPCS3 appears to be running; close it before patching")
+    journal, pair = plan["_journal"], plan["_pair"]
     usrdir = Path(plan["usrdir"])
     journal["usrdir"] = str(usrdir)
     for action in plan["actions"]:
         if action["file"] == GAME_ELF_NAME:
-            backup_once(usrdir, GAME_ELF_NAME, journal, accepted=("self",))
-            copy_verified(pair["elf"], usrdir / GAME_ELF_NAME, pair["elf_sha256"])
+            backup_once(usrdir, GAME_ELF_NAME, journal, accepted=("self",), progress=progress)
+            copy_verified(pair["elf"], usrdir / GAME_ELF_NAME, pair["elf_sha256"],
+                          _report(progress, "Installing EBOOT.BIN"))
         else:
-            backup_once(usrdir, SDAT_NAME, journal)
-            copy_verified(pair["sdat"], usrdir / SDAT_NAME, pair["sdat_sha256"])
+            backup_once(usrdir, SDAT_NAME, journal, progress=progress)
+            copy_verified(pair["sdat"], usrdir / SDAT_NAME, pair["sdat_sha256"],
+                          _report(progress, "Installing data.sdat"))
     legacy = usrdir / LEGACY_ELF_NAME
     if legacy.is_file():
         legacy.unlink()
@@ -301,21 +344,37 @@ def apply(build, usrdir=None, *, confirm=False):
     })
     journal.pop("restored_at", None)
     write_journal(usrdir, journal)
-    plan.update(applied=True, journal=str(journal_path(usrdir)))
-    return plan
+    result = public_plan(plan)
+    result.update(applied=True, journal=str(journal_path(usrdir)))
+    return result
 
 
-def restore(usrdir=None, *, confirm=False):
+def apply(build, usrdir=None, *, confirm=False, progress=None):
+    plan = plan_install(build, usrdir or default_usrdir(), progress)
+    if not confirm:
+        result = public_plan(plan)
+        result.update(dry_run=True,
+                      next="Re-run with --apply to write; nothing was changed.")
+        return result
+    result = write_plan(plan, progress)
+    result["dry_run"] = False
+    return result
+
+
+def plan_restore(usrdir=None, progress=None):
+    """Check every recorded backup without writing anything."""
     usrdir = require_usrdir(usrdir or default_usrdir())
     journal = read_journal(usrdir)
     require(isinstance(journal, dict), "No patch journal; nothing recorded to restore")
     backups = journal.get("backups") or {}
     require(backups, "No backups recorded; nothing to restore")
-    plan = {"usrdir": str(usrdir), "restore": {}, "removed": [], "dry_run": not confirm}
+    plan = {"usrdir": str(usrdir), "restore": {}, "removed": [],
+            "_journal": journal, "_backups": backups}
     for name, info in backups.items():
         backup = usrdir / BACKUP_DIRNAME / name
         require(backup.is_file(), f"Backup missing for {name}; cannot restore")
-        require(sha256_file(backup) == info["sha256"], f"Backup for {name} was modified; refusing to restore")
+        require(sha256_file(backup, _report(progress, f"Checking the {name} backup")) == info["sha256"],
+                f"Backup for {name} was modified; refusing to restore")
         current = usrdir / name
         plan["restore"][name] = {"backup": str(backup), "sha256": info["sha256"],
                                  "size": info["size"],
@@ -323,22 +382,42 @@ def restore(usrdir=None, *, confirm=False):
     legacy = usrdir / LEGACY_ELF_NAME
     if legacy.is_file():
         plan["removed"].append(str(legacy))
-    if not confirm:
-        plan["next"] = "Re-run with --apply to restore; nothing was changed."
-        return plan
+    return plan
+
+
+def write_restore(plan, progress=None):
+    """Copy the recorded backups back; the caller owns confirmation."""
+    require("_journal" in plan and "_backups" in plan,
+            "Restore plan was not produced by plan_restore()")
     require(not rpcs3_running(), "RPCS3 appears to be running; close it before restoring")
-    for name, info in backups.items():
-        copy_verified(usrdir / BACKUP_DIRNAME / name, usrdir / name, info["sha256"])
+    usrdir, journal = Path(plan["usrdir"]), plan["_journal"]
+    for name, info in plan["_backups"].items():
+        copy_verified(usrdir / BACKUP_DIRNAME / name, usrdir / name, info["sha256"],
+                      _report(progress, f"Restoring {name}"))
+    legacy = usrdir / LEGACY_ELF_NAME
     if legacy.is_file():
         legacy.unlink()
     journal["restored_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     journal["installs"] = []
     write_journal(usrdir, journal)
-    plan["restored"] = True
-    return plan
+    result = public_plan(plan)
+    result.update(restored=True)
+    return result
 
 
-def status(usrdir=None):
+def restore(usrdir=None, *, confirm=False, progress=None):
+    plan = plan_restore(usrdir, progress)
+    if not confirm:
+        result = public_plan(plan)
+        result.update(dry_run=True,
+                      next="Re-run with --apply to restore; nothing was changed.")
+        return result
+    result = write_restore(plan, progress)
+    result["dry_run"] = False
+    return result
+
+
+def status(usrdir=None, progress=None):
     usrdir = require_usrdir(usrdir or default_usrdir())
     journal = read_journal(usrdir)
     files = {}
@@ -350,11 +429,14 @@ def status(usrdir=None):
                 kind = "archive"
             else:
                 kind = {ELF_MAGIC: "ELF", SELF_MAGIC: "SELF"}.get(magic(path), "unknown")
-            files[name] = {"size": path.stat().st_size, "sha256": sha256_file(path), "kind": kind}
+            files[name] = {"size": path.stat().st_size,
+                           "sha256": sha256_file(path, _report(progress, f"Checking {name}")),
+                           "kind": kind}
     backups = {}
     for name in (GAME_ELF_NAME, SDAT_NAME):
         path = usrdir / BACKUP_DIRNAME / name
-        backups[name] = ({"size": path.stat().st_size, "sha256": sha256_file(path)}
+        backups[name] = ({"size": path.stat().st_size,
+                          "sha256": sha256_file(path, _report(progress, f"Checking the {name} backup"))}
                          if path.is_file() else None)
     installed = None
     if isinstance(journal, dict) and journal.get("installs"):
@@ -383,9 +465,10 @@ def default_usrdir():
     candidates.extend((tool_root() / "PS3_GAME/USRDIR", tool_root() / "USRDIR",
                        tool_root() / ".." / "PS3_GAME/USRDIR"))
     for candidate in candidates:
-        candidate = candidate.resolve()
-        if (candidate / GAME_ELF_NAME).is_file():
-            return candidate
+        try:
+            return resolve_usrdir(candidate)
+        except ValueError:
+            continue
     raise ValueError("Cannot find the game USRDIR; pass --game-dir <.../PS3_GAME/USRDIR>")
 
 

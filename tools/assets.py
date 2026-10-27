@@ -37,6 +37,16 @@ def module(name, path):
     return mod
 
 
+def configured_usrdir(config):
+    """The operator's own installed folder; this checkout ships no default path."""
+    value = str(config.get("game_usrdir") or "").strip()
+    if not value:
+        raise ValueError(
+            "project.json has no game_usrdir; add your own <game>/PS3_GAME/USRDIR path "
+            "to read the installed archive")
+    return Path(value)
+
+
 def prepare():
     WORK.mkdir(parents=True, exist_ok=True)
     if not UPSTREAM.exists():
@@ -48,7 +58,7 @@ def prepare():
         subprocess.run(["gcc", "-O2", "-D_FILE_OFFSET_BITS=64", "-o", str(BINARY),
                         *[str(UPSTREAM / n) for n in ("make_npdata.c", "aes.c", "sha1.c", "lz.c", "utils.c")]], check=True)
     config = json.loads((ROOT / "project.json").read_text(encoding="utf-8"))
-    source = Path(config["game_usrdir"]) / "data.sdat"
+    source = configured_usrdir(config) / "data.sdat"
     output = WORK / "data.dat"
     manifest = WORK / "decryption.json"
     if manifest.exists() and output.exists():
