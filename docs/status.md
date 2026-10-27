@@ -1,5 +1,10 @@
 # Status — 2026-10-27
 
+## Published fresh-archive installer — 2026-10-28
+
+- Updated the existing v0.1 GitHub prerelease with the fresh-archive GUI `14715846…` (38,051,439 bytes) and the matching installer zip `e86b584ce51e21f3dde5d8ceaccc0904d8ac559cf4da8467ec0f49a2b9f8c581` (37,900,274 bytes). GitHub reports both expected SHA-256 digests; the published executable was downloaded and independently hashed. Its source and scanner are on `main` in commit `2580717`.
+- This update changes installer archive compatibility, not dialogue or typography. The known `place.She` spacing defect and other audit candidates remain; runtime acceptance and the 24 manual checks are not claimed.
+
 ## Base-story text spacing audit — 2026-10-28
 
 - Read-only `python -X utf8 tools/wrap_text_audit.py --output work/qa/base-wrap-spacing-candidates-refined-20261028.json` scans the closed base/shared story ownership inventory: 787 message script files, 101,829 text items (92,497 differ from Japanese), plus 485 owned scenarios without an extracted message script. Choices are not included. The membership inventory identifies ownership, not route execution. No script or game output was modified.
