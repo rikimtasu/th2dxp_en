@@ -147,21 +147,17 @@ class Window:
         ttk.Label(header, text=INTRO, style="Hint.TLabel", justify="left").grid(
             row=1, column=0, sticky="w", pady=(6, 0))
 
-        folders = ttk.LabelFrame(root, text="Folders", padding=(12, 8))
+        folders = ttk.LabelFrame(root, text="Game folder", padding=(12, 8))
         folders.grid(row=1, column=0, sticky="ew", padx=16)
         folders.columnconfigure(1, weight=1)
         self.game_var = tk.StringVar(value=self.settings.get("game_dir", ""))
-        self.build_var = tk.StringVar(value=self.settings.get("build_dir", ""))
-        ttk.Label(folders, text="Game folder").grid(row=0, column=0, sticky="w")
+        ttk.Label(folders, text="Path").grid(row=0, column=0, sticky="w")
         ttk.Entry(folders, textvariable=self.game_var).grid(row=0, column=1, sticky="ew", padx=8)
         ttk.Button(folders, text="Browse...", command=self.browse_game).grid(row=0, column=2)
-        ttk.Label(folders, text="Patch data").grid(row=1, column=0, sticky="w", pady=(8, 0))
-        ttk.Entry(folders, textvariable=self.build_var).grid(row=1, column=1, sticky="ew", padx=8,
-                                                             pady=(8, 0))
-        ttk.Button(folders, text="Browse...", command=self.browse_build).grid(row=1, column=2,
-                                                                             pady=(8, 0))
-        ttk.Label(folders, text="The game folder you installed in RPCS3 (it contains PS3_GAME).",
-                  style="Hint.TLabel").grid(row=2, column=0, columnspan=3, sticky="w", pady=(8, 0))
+        ttk.Label(folders,
+                  text="The folder you installed in RPCS3 (it contains PS3_GAME). The patch "
+                       "itself is built into this program.",
+                  style="Hint.TLabel").grid(row=1, column=0, columnspan=3, sticky="w", pady=(8, 0))
 
         progress = ttk.Frame(root, padding=(16, 10, 16, 0))
         progress.grid(row=2, column=0, sticky="ew")
@@ -199,11 +195,8 @@ class Window:
 
         root.protocol("WM_DELETE_WINDOW", self.close)
         self.write(INTRO)
-        if not self.build_var.get():
-            found = find_build()
-            if found is not None:
-                self.build_var.set(str(found))
-                self.write(f"\nPatch files found: {found}")
+        if self.settings.get("build_dir"):
+            self.settings.pop("build_dir", None)
         if self.game_var.get():
             self.root.after(150, self.check)
         else:
@@ -252,16 +245,9 @@ class Window:
             self.game_var.set(chosen)
             self.check()
 
-    def browse_build(self):
-        from tkinter import filedialog
-        chosen = filedialog.askdirectory(title="Select the folder with the patch data",
-                                         parent=self.root)
-        if chosen:
-            self.build_var.set(chosen)
-
     def remembered(self):
-        self.settings.update(game_dir=self.game_var.get().strip(),
-                             build_dir=self.build_var.get().strip())
+        self.settings.update(game_dir=self.game_var.get().strip())
+        self.settings.pop("build_dir", None)
         try:
             save_settings(self.settings)
         except OSError:
@@ -348,15 +334,13 @@ class Window:
         return patch_game.require_usrdir(self.game_var.get().strip())
 
     def build(self):
-        text = self.build_var.get().strip()
-        if text:
-            return Path(text)
+        """The patch data travels inside the program; the player never supplies it."""
         found = find_build()
         if found is None:
             raise ValueError(
-                "The patch data is missing.\n\nExpected a 'patch-data' folder containing "
-                "manifest.json next to this program, or choose it with Browse.")
-        self.build_var.set(str(found))
+                "The built-in patch data is missing or damaged.\n\n"
+                "Download th2dxp_patch_gui.exe again from the release page and run it "
+                "directly; do not move files out of it.")
         return found
 
     # ---- actions ---------------------------------------------------------

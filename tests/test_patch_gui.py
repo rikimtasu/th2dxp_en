@@ -81,10 +81,22 @@ class SettingsTests(unittest.TestCase):
         self.path = Path(self.temporary.name) / "nested" / "ui.json"
 
     def test_round_trip_creates_parents_and_writes_lf(self):
-        patch_gui.save_settings({"game_dir": "C:/game", "build_dir": "C:/patch"}, self.path)
-        self.assertEqual(patch_gui.load_settings(self.path),
-                         {"game_dir": "C:/game", "build_dir": "C:/patch"})
+        patch_gui.save_settings({"game_dir": "C:/game"}, self.path)
+        self.assertEqual(patch_gui.load_settings(self.path), {"game_dir": "C:/game"})
         self.assertNotIn(b"\r\n", self.path.read_bytes())
+
+    def test_a_legacy_build_dir_setting_is_ignored(self):
+        patch_gui.save_settings({"game_dir": "C:/game", "build_dir": "C:/old-patch"}, self.path)
+        self.assertEqual(patch_gui.load_settings(self.path)["game_dir"], "C:/game")
+
+    def test_patch_data_is_discovered_never_asked_for(self):
+        with tempfile.TemporaryDirectory() as folder:
+            bundled = Path(folder) / "patch-data"
+            with patch.object(patch_gui, "find_build", return_value=bundled):
+                self.assertEqual(patch_gui.Window.build(None), bundled)
+            with patch.object(patch_gui, "find_build", return_value=None):
+                with self.assertRaisesRegex(ValueError, "built-in patch data"):
+                    patch_gui.Window.build(None)
 
     def test_missing_and_corrupt_settings_read_as_empty(self):
         self.assertEqual(patch_gui.load_settings(self.path), {})
