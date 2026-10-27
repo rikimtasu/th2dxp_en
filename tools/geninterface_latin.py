@@ -54,6 +54,14 @@ def aliases(source):
     return result
 
 
+def raster_font():
+    """Return the approved face at the reviewed raster em, refusing other inputs."""
+    font_bytes = FONT.read_bytes()
+    if project.digest(font_bytes) != FONT_SHA256:
+        raise ValueError("Selected font provenance changed")
+    return ImageFont.truetype(io.BytesIO(font_bytes), EM, layout_engine=ImageFont.Layout.BASIC)
+
+
 def raster_ink(font, char):
     """Capture complete, unclipped source-face ink relative to its baseline."""
     scratch = Image.new("L", (192, 192))
