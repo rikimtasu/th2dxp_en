@@ -261,3 +261,22 @@ Gen Regular masks already carry the intended stroke, so applying the source font
 
 Stage the distincta15f4f08... ELF/be72aa94... SDAT under `build/gen-latin-reload-probe/`.88 synthetic tests, all six native replays,200 instruction sites/240 data patches/68 pairs, all1,884 payloads,3,505 preserved archive entries and complete DAT authentication/decryption pass offline. The new24-field form starts null; old scoped passes are not transferred. `gates.py check` exits1 with production cutover and genuine manual evidence still blocked. No runtime, GPU, save-format, branch or full-game-memory acceptance is claimed.
 
+
+## 2026-10-26 — User-supplied translation reference and line fidelity
+
+The translation prompt is retained in full in `docs/ittaku-reference.md#user-supplied-translation-reference`. Resolve subjects, predicates and pronouns from surrounding context; use natural, vivid colloquial English unless the source voice requires another register. Preserve details, intensity and readable sounds/interjections without sanitizing or embellishing them. Translate natural language only; leave variables, escapes, tags, IDs, paths and other non-language tokens intact.
+
+One original native editable text item requires one corresponding English fragment. Preserve item count/order, incomplete continuations, inline controls and original suffixes; never merge neighboring lines or add script breaks to imitate PC wrapping. Context informs meaning, not permission to move whole utterances between records. The rule does not authorize PC-exclusive content, guessed edition correspondence or a runtime-gate bypass.
+
+The user reports that another model solved the engine/UI issues. Resume private editorial translation without reopening those fixes. This report is not silently expanded into24 individual exact-build observations: production acceptance remains governed by the existing evidence contract.
+
+
+## 2026-10-26 — Explicit bulk editorial authorization
+
+Asked whether to override the pre-bulk runtime gate for private drafting only; the user selected **Proceed with bulk editorial translation**. Continue every source-bound base-game message and native choice, including PS3 base content without a verified PC counterpart. This explicitly permits bulk editorial work before runtime acceptance; it does not turn the blank24-field form into evidence or authorize production insertion/builds. Preserve the prior exact-build failures and runtime/production guards. AnotherDays and separately owned stories remain deferred; absent PC matches do not prove exclusivity or permit dropping PS3 text.
+
+## 2026-10-27 — Focus private-draft checks on changed inputs
+
+The user requested trimming checks that delay progress without protecting correctness. Private draft assembly now checks only its actual selected script or parent/choice pair, not a copied full editable workspace. Replace parent validation-receipt dependence with direct source, text/control, metadata and native reconstruction checks. Keep substantive source/revision binding, base scope, complete per-item meaning and boundaries, CP932, controls/private glyphs, non-text preservation, relocation and codec round trips.
+
+Do not automatically repeat whole-corpus reviews, unchanged native/UI/crypto diagnostics or progress/hash bookkeeping for each batch. Optional wording/cultural-gloss questions and absent administrative receipts do not invalidate valid output or block unrelated private drafting. Known definite defects still need targeted correction; this does not relax semantic fidelity, exact-text review, production/runtime gates or actual insertion/build checks. Translation remains in the current Sol6.1 session with no added workers.

@@ -187,6 +187,21 @@ Use Ittaku as the preferred **main-game reading/reference source**, once a candi
 
 There is no automatic import, sentence alignment, guessed speaker/route mapping, or unreviewed copying. Do not assign a PS3 line solely because the English fragment resembles nearby Japanese. Confirm the Japanese passage, scene and edition first; keep reviewed PS3 translation separate from these ignored reference assets. Credits must be preserved and reuse permission resolved before redistribution of borrowed translation material.
 
+## User-supplied translation reference
+
+Apply this prompt when translating or reviewing PS3 text:
+
+- Based on the surrounding context, correctly understand subject-predicate relationships, use personal pronouns accurately, and avoid pronoun confusion.
+- The translation should be vivid, natural, and colloquial; avoid overly formal or literary phrasing unless the original context or character setting truly calls for it.
+- All details and style of the original text must be faithfully reproduced; even if it contains explicit, vulgar, or extreme descriptions, translate them in full original flavor without evading, diluting, or prettifying them.
+- The translation line count must strictly correspond one-to-one with the original text; if the original text is not a complete sentence, the translation should be the same. Merging or splitting adjacent lines is strictly prohibited.
+- Translate all readable natural language content completely; preserve control characters that do not convey natural language semantics exactly as they are.
+  - If a line contains both natural language and control characters, translate only the natural language part.
+  - Positive examples: dialogue, narration, onomatopoeia, interjections, proper nouns, and specific terms enclosed in punctuation (e.g., book titles, quotes).
+  - Negative examples: variables/placeholders, escape sequences, tags and style markers, code/expressions, IDs/keys/file paths/URLs.
+
+For this workspace, a source line is one native editable `text` item (`filename:unit:item`), not a screen-wrapped row or an entire read-marker group. Keep its natural-language content and incomplete continuation in that item; do not redistribute neighboring fragments merely to make complete English sentences. Preserve inline controls in their original item/order and leave `control_suffix`, standalone controls and bytecode untouched. Native word wrapping may change visual rows, never script-item count or authored breaks. PS3 edition correspondence remains mandatory: this prompt does not authorize importing PC-only content.
+
 ## Format research
 
 - [RFC 3284](https://www.rfc-editor.org/rfc/rfc3284): VCDIFF integer encoding, default opcode table, ADD/COPY/RUN and source requirements. The parser also recognizes xdelta's application-header and Adler-32 extension bits observed in this patch.

@@ -50,9 +50,25 @@ class CoverageReviewTests(unittest.TestCase):
         self.assertTrue(record["verified_translation_complete"])
         self.assertFalse(record["verified_unchanged_exception"])
 
+    def test_original_blank_tokens_need_explicit_nonlinguistic_exceptions(self):
+        for text in ("", " ", "\u3000", "\u3000" * 20):
+            with self.subTest(text=repr(text)):
+                record = self.apply(self.fixture(text, text, "unchanged_token_exception",
+                                                 "nonlinguistic_token"))
+                self.assertTrue(record["coverage_complete"])
+                self.assertTrue(record["verified_unchanged_exception"])
+                self.assertFalse(record["verified_translation_complete"])
+
+    def test_blank_exceptions_cannot_hide_deleted_language_or_literal_controls(self):
+        for before, after, category in (("未翻訳です。", "", "nonlinguistic_token"),
+                                         ("", "", "proper_name"),
+                                         ("\n", "\n", "nonlinguistic_token")):
+            with self.subTest(before=before, category=category), self.assertRaises(ValueError):
+                self.apply(self.fixture(before, after, "unchanged_token_exception", category))
+
     def test_changed_blank_stale_and_unsupported_exception_claims_are_rejected(self):
         fixtures = [self.fixture("Konomi", "Tamaki", "unchanged_token_exception", "proper_name"),
-                    self.fixture(" ", " ", "unchanged_token_exception", "nonlinguistic_token"),
+                    self.fixture("未翻訳です。", " ", "unchanged_token_exception", "nonlinguistic_token"),
                     self.fixture("CD", "CD", "unchanged_token_exception", "dialogue")]
         stale = self.fixture("CD", "CD", "unchanged_token_exception", "nonlinguistic_token")
         stale[3]["translated_text_sha256"] = "stale"

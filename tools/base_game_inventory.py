@@ -273,11 +273,16 @@ def apply_record_reviews(name, original, edited, records, reviews):
         ui, ii = record["unit"], record["item"]
         before = original[ui]["items"][ii]["original_text"]
         after = edited[ui]["items"][ii]["translated_text"]
+        kind = claim["review_kind"]
+        preserved_blank_token = (
+            kind == "unchanged_token_exception"
+            and claim.get("exception_category") == "nonlinguistic_token"
+            and after == before and all(char in " \u3000" for char in before)
+        )
         if (claim["original_text_sha256"] != project.digest(before.encode("utf-8"))
                 or claim["translated_text_sha256"] != project.digest(after.encode("utf-8"))
-                or not after.strip()):
+                or (not after.strip() and not preserved_blank_token)):
             raise ValueError(f"Reviewed translation no longer matches source/current text: {record['id']}")
-        kind = claim["review_kind"]
         if kind == "translation_completeness":
             if not record["translation_changed"] or after == before:
                 raise ValueError(f"Unchanged text requires an explicit name/token exception: {record['id']}")
