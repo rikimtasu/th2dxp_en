@@ -21,14 +21,16 @@ import patch_engine
 import patch_game
 
 TITLE = "ToHeart2 DX PLUS - English patch"
-VERSION = "0.1"
+VERSION = "0.2"
 SETTINGS_NAME = "th2dxp_patch_ui.json"
 INTRO = (
-    "This installs the English patch into the game you own. It decrypts EBOOT.BIN\n"
-    "and data.sdat, applies the patch and verifies every result before replacing\n"
-    "anything. Your originals stay in .th2dxp-backup so you can undo it.\n\n"
-    "The first install takes several minutes because data.sdat is 2.2 GB.\n"
-    "It never starts RPCS3 and never touches save data."
+    "v0.2: QC/spacing corrections and 85% dialogue size, with limited player testing.\n"
+    "Only your game folder is needed; no Python or separate patch data.\n"
+    "If an older patch is installed, use Restore original first, then Install.\n"
+    "Start a fresh New Game; older execution-position saves are not supported.\n"
+    "Your originals stay in .th2dxp-backup. The first install takes several minutes.\n"
+    "Voice timing and full runtime acceptance remain unverified.\n"
+    "This program never starts RPCS3 and never touches save data."
 )
 
 

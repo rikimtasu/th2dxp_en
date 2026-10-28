@@ -209,7 +209,19 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(record["mode"], "self-contained")
         self.assertEqual(record["sdat_sha256"], sha(installed_sdat))
         self.assertEqual(record["sdat_dat_sha256"], sha(self.patched_dat))
+        self.assertEqual(result["elf_sha256"], sha(self.patched_elf))
+        self.assertEqual(result["sdat_sha256"], sha(installed_sdat))
         self.assertFalse((self.usrdir / patch_engine.WORK_DIRNAME).exists())
+
+    def test_executable_only_install_reports_the_retained_archive_hash(self):
+        self.install()
+        installed_sdat = (self.usrdir / "data.sdat").read_bytes()
+        self.write(self.usrdir / "EBOOT.BIN", self.pristine_elf)
+        result = self.install()
+        self.assertEqual(result["installed"], {"elf": True, "sdat": False})
+        self.assertEqual(result["elf_sha256"], sha(self.patched_elf))
+        self.assertEqual(result["sdat_sha256"], sha(installed_sdat))
+        self.assertEqual((self.usrdir / "data.sdat").read_bytes(), installed_sdat)
 
     def test_a_dry_run_writes_nothing(self):
         result = patch_engine.install(self.patch, self.usrdir)

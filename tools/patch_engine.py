@@ -120,7 +120,7 @@ def default_patch_dir(start=None):
     roots = []
     if getattr(sys, "frozen", False):
         roots.append(Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)))
-    roots += [patch_game.tool_root(), ROOT / "build" / "patch-data-v0.1"]
+    roots += [patch_game.tool_root(), ROOT / "build" / "patch-data-v0.2"]
     for root in roots:
         for candidate in (root / "patch-data", root):
             if (candidate / patch_data.MANIFEST_NAME).is_file():
@@ -379,6 +379,9 @@ def apply(plan, progress=None):
         shutil.rmtree(work, ignore_errors=True)
     result = public_plan(plan)
     result.update(applied=True, installed=installed,
+                  elf_sha256=elf_spec["output_sha256"],
+                  sdat_sha256=(built_hash if installed["sdat"]
+                               else plan["archive"]["current_sha256"]),
                   journal=str(patch_game.journal_path(usrdir)))
     return result
 

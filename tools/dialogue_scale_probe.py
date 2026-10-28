@@ -63,7 +63,7 @@ def check_layout(source, old, new, previous, native):
             "wait and newline controls for the replay.\\k\\nOne last reply.\\k\\n").encode("cp932")
     results = []
     for image, report, scale in ((old, previous, 1.0), (new, native, 0.85)):
-        model = native_runtime_text_smoke.RuntimeCPU(source, image, report, text, bytes(32), 16,
+        model = native_runtime_text_smoke.RuntimeCPU(source, replay_image(image, source), report, text, bytes(32), 16,
                                                      width=984, height=628, scale=scale, dialogue=True)
         model.write(model.TEXT, text + b"\0")
         model.r[4] = model.TEXT
@@ -77,7 +77,7 @@ def check_layout(source, old, new, previous, native):
     short = b"Readable dialogue example."
     widths = []
     for image, report, scale in ((old, previous, 1.0), (new, native, 0.85)):
-        model = native_runtime_text_smoke.RuntimeCPU(source, image, report, short, bytes(32), 16,
+        model = native_runtime_text_smoke.RuntimeCPU(source, replay_image(image, source), report, short, bytes(32), 16,
                                                      width=984, height=628, scale=scale, dialogue=True)
         model.write(model.TEXT, short + b"\0")
         model.r[4] = model.TEXT

@@ -13,9 +13,10 @@ CONTINUE = 0x64008
 SCALE_BITS = 0x3F59999A  # nearest binary32 to 0.85
 
 
-def apply(image, native):
-    """Patch the normal-context constructor return, not the shared font setup."""
-    if not native_layout_patch.native_code_matches(image, image, native):
+def apply(image, native, *, staged=None):
+    """Patch normal dialogue in a source-bound image, never the shared font setup."""
+    staged = image if staged is None else staged
+    if not native_layout_patch.native_code_matches(image, staged, native):
         raise ValueError("Dialogue scale requires the complete pinned native template")
     source = project.source_bytes()
     callers = bytes.fromhex("38a0000038600000809df7884800caf960000000"

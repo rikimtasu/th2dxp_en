@@ -2,19 +2,21 @@
 
 Unofficial English localization of **ToHeart2 DX PLUS** (PS3, `BLJM60381`).
 
-The base-game dialogue is translated and an installer is published, but this is a
-**preview, not a finished patch**: no runtime acceptance exists yet (the 24 manual
-observation slots are empty), so boot behaviour, pagination, saves and route
-coverage are unproven. Project tools never launch an emulator and never touch
-your saves.
+The English base-game installer is a **preview, not a finished patch**.
+**v0.2** includes QC/spacing corrections and 85% dialogue size. The player tested
+this game payload and supplied three positive screenshots; comprehensive runtime,
+save and route acceptance is still incomplete. Project tools never launch an
+emulator and never touch your saves.
 
 ## Install (players)
 
-1. Download `th2dxp_en-v0.1-installer.zip` from
-   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.1), unpack it
+1. Download `th2dxp_en-v0.2-installer.zip` from
+   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.2), unpack it
    and run `th2dxp_patch_gui.exe` — Windows, no Python.
 2. Point it at the folder holding `PS3_GAME/USRDIR`.
-3. Press **Install**, then start the game yourself in RPCS3.
+3. If upgrading an older patch, press **Restore original** first, then **Install**.
+4. Start a **fresh ToHeart2 New Game** yourself in RPCS3. Older builds' execution-position
+   saves are not supported; preserve personal saves and use disposable same-build slots.
 
 It decrypts *your* `EBOOT.BIN` and `data.sdat`, applies the hash-pinned patch,
 verifies both files and keeps byte-exact backups in `USRDIR/.th2dxp-backup/`.
@@ -66,9 +68,13 @@ extracted Japanese, built ELF/SDAT or saves are tracked or published.
 
 - **Translated:** 885 base-game scenarios, 102,062 text items, the
   Latin/punctuation font atlas and the English default name `Kouno Takaaki`.
-- **Unverified:** rendering, long-line pagination, save compatibility, route
-  reachability. `work/qa/gen-latin-reload-results-to-fill.json` stays unwritten
-  until someone observes the real build.
+- **v0.2:** 1,928 text-item corrections across 311 files, including 457 spacing
+  fixes, plus 85% normal-dialogue size without changing character tracking.
+- **Observed:** the player reports the combined build looks good; screenshots show
+  corrected spacing/name spelling and readable text in the shown opening/classroom scenes.
+- **Still unverified:** full-game rendering/pagination, voice timing, save compatibility
+  and route reachability. The older template's manual form is not repinned or filled
+  from these limited observations.
 - **Not started:** AnotherDays.
 - `tools/project.py check` fails closed here on purpose: shipped lines exceed the
   original Japanese slots, and the growth path stays gated on manual acceptance.
