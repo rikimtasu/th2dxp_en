@@ -1,0 +1,66 @@
+Version: 1.2
+
+# Generated debug startup patches; enable ONE mode, then restart.
+# Do not use the prepatched debug-probe ELF with these cheats.
+
+# Original Japanese BLJM60381; ELF SHA-256: 8d8bc60d2b02d12f509a9a3ee9c126876ac8524d4f02c7871206aca9bd66e828
+PPU-632efe7e535a8406c75c289308b61a5ad6653918:
+  "Debug - Scene Selector":
+    Games:
+      "ToHeart2 DX PLUS":
+        BLJM60381: [ All ]
+    Author: "TH2DXP localization workspace"
+    Patch Version: 1.0
+    Group: "TH2DXP Debug Startup"
+    Notes: "Retained character/event selector. User confirmed this RPCS3 patch works on the original executable. Enable only one debug startup mode. Start a NEW ToHeart2 game; do not load or save progress. Disable and restart for normal play. Keep the correct SDAT paired with your executable."
+    Patch:
+      - [ be32, 0x0008bc9c, 0x3c80000f ]
+      - [ be32, 0x0008bca0, 0x6084a62c ]
+      - [ be32, 0x0008bca4, 0x3c600065 ]
+      - [ be32, 0x0008bca8, 0x80632614 ]
+      - [ be32, 0x0008bcac, 0x4bfd2435 ]
+  "Debug - System Tests (Map, Calendar, Clock)":
+    Games:
+      "ToHeart2 DX PLUS":
+        BLJM60381: [ All ]
+    Author: "TH2DXP localization workspace"
+    Patch Version: 1.0
+    Group: "TH2DXP Debug Startup"
+    Notes: "Retained map, calendar and clock tests. User confirmed this RPCS3 patch works on the original executable. Enable only one debug startup mode. Start a NEW ToHeart2 game; do not load or save progress. Disable and restart for normal play. Keep the correct SDAT paired with your executable."
+    Patch:
+      - [ be32, 0x0008bc9c, 0x3c80000f ]
+      - [ be32, 0x0008bca0, 0x6084999c ]
+      - [ be32, 0x0008bca4, 0x3c600065 ]
+      - [ be32, 0x0008bca8, 0x80632614 ]
+      - [ be32, 0x0008bcac, 0x4bfd2435 ]
+
+# build/english-progress-diagnostic-20261029/EBOOT.elf; ELF SHA-256: 2ad4f9a2a538240336831bd1ab1db2faadc8885f7119faa1b8b04cfd08d22e39
+PPU-3c761fee9609f87cd41cfce7a5dfb32a2ffd4aa9:
+  "Debug - Scene Selector":
+    Games:
+      "ToHeart2 DX PLUS":
+        BLJM60381: [ All ]
+    Author: "TH2DXP localization workspace"
+    Patch Version: 1.0
+    Group: "TH2DXP Debug Startup"
+    Notes: "Retained character/event selector. The original ELF probe was user-tested; this RPCS3 patch packaging still needs manual confirmation. Enable only one debug startup mode. Start a NEW ToHeart2 game; do not load or save progress. Disable and restart for normal play. Keep the correct SDAT paired with your executable."
+    Patch:
+      - [ be32, 0x0008bc9c, 0x3c80000f ]
+      - [ be32, 0x0008bca0, 0x6084a62c ]
+      - [ be32, 0x0008bca4, 0x3c600065 ]
+      - [ be32, 0x0008bca8, 0x80632614 ]
+      - [ be32, 0x0008bcac, 0x4bfd2435 ]
+  "Debug - System Tests (Map, Calendar, Clock)":
+    Games:
+      "ToHeart2 DX PLUS":
+        BLJM60381: [ All ]
+    Author: "TH2DXP localization workspace"
+    Patch Version: 1.0
+    Group: "TH2DXP Debug Startup"
+    Notes: "Retained map, calendar and clock tests. Runtime functionality is not yet confirmed. Enable only one debug startup mode. Start a NEW ToHeart2 game; do not load or save progress. Disable and restart for normal play. Keep the correct SDAT paired with your executable."
+    Patch:
+      - [ be32, 0x0008bc9c, 0x3c80000f ]
+      - [ be32, 0x0008bca0, 0x6084999c ]
+      - [ be32, 0x0008bca4, 0x3c600065 ]
+      - [ be32, 0x0008bca8, 0x80632614 ]
+      - [ be32, 0x0008bcac, 0x4bfd2435 ]

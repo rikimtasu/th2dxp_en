@@ -1,5 +1,9 @@
 # Reverse-engineering notes
 
+Retained developer script selectors and activation procedure:
+[`debug-scripts.md`](debug-scripts.md). Both RPCS3 debug patches were user-confirmed
+on the original executable; English variants and production acceptance remain separate.
+
 ## Complete scenario executable
 
 Source identity: `project.json`; tool revisions: `upstreams.json`.
