@@ -7,13 +7,8 @@ p_vaddr; p_memsz-p_filesz is zero, never copied from trailing ELF metadata.
 from __future__ import annotations
 
 from fractions import Fraction
-from pathlib import Path
 import struct
-import sys
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
-import project
 import capstone
 
 MASK = (1 << 64) - 1
@@ -138,6 +133,7 @@ class Scanner:
         self.mapped.append((self.CTX, len(self.mem)))
         self.r, self.f = [0] * 32, [0.0] * 32
         self.xer_ca = False
+        self.ctr = 0
         # FPSCR is opaque save/restore state; exception/status arithmetic and
         # non-default rounding modes are outside this finite software model.
         self.fpscr = 0

@@ -6,7 +6,6 @@ are retained. A per-span width cache serves every independent flower endpoint.
 """
 from __future__ import annotations
 
-from pathlib import Path
 import struct
 import sys
 

@@ -31,13 +31,14 @@ from __future__ import annotations
 
 import argparse
 import datetime
-import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
+
+from patch_data import require, sha256_file
 
 BACKUP_DIRNAME = ".th2dxp-backup"
 JOURNAL_NAME = ".th2dxp-en-patch.json"
@@ -55,11 +56,6 @@ PRISTINE_SDAT_SHA256 = "4509a4e93e7e630e09971326d3e5f78e4c48a05e588e8c1ab9f0a88b
 PRISTINE_SDAT_SIZE = 2185195888
 
 
-def require(condition, message):
-    if not condition:
-        raise ValueError(message)
-
-
 def load_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
@@ -69,21 +65,6 @@ def save_json(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as stream:
         stream.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
-
-
-def sha256_file(path, progress=None):
-    """Hash a file, reporting (done, total) bytes so a GUI can show progress."""
-    path = Path(path)
-    total = path.stat().st_size
-    digest = hashlib.sha256()
-    done = 0
-    with path.open("rb") as stream:
-        while chunk := stream.read(CHUNK):
-            digest.update(chunk)
-            done += len(chunk)
-            if progress is not None:
-                progress(done, total)
-    return digest.hexdigest()
 
 
 def magic(path):

@@ -47,24 +47,26 @@ def check_hook(source, image, native, *, null=False):
         raise ValueError("Dialogue scale hook changed registers or condition flags")
     after = bytearray(cpu.read(cpu.CTX, 0x560))
     if not null:
+        scale = native["dialogue_scale"]["factor"]
+        expected = struct.unpack(">I", struct.pack(">f", scale))[0]
         for offset in (0xA4, 0xA8):
-            if cpu.get(cpu.CTX + offset, 4) != native_dialogue_scale_patch.SCALE_BITS:
-                raise ValueError("Dialogue scale is not 85% on both axes")
+            if cpu.get(cpu.CTX + offset, 4) != expected:
+                raise ValueError(f"Dialogue scale is not {scale:.0%} on both axes")
             after[offset:offset + 4] = context[offset:offset + 4]
     if bytes(after) != context:
         raise ValueError("Dialogue scale hook modified unrelated context")
 
 
-def check_layout(source, old, new, previous, native):
+def check_layout(source, old, new, previous, native, *, scale=0.85):
     text = ("A long example question should be readable and should wrap naturally on the screen."
             "\\k\\nAnother deliberately lengthy example line exercises word wrapping and ensures "
             "that complete text remains visible without abbreviation.\\k\\nThen a short line."
             "\\k\\nA final example paragraph crosses several lines while retaining all native "
             "wait and newline controls for the replay.\\k\\nOne last reply.\\k\\n").encode("cp932")
     results = []
-    for image, report, scale in ((old, previous, 1.0), (new, native, 0.85)):
+    for image, report, current_scale in ((old, previous, 1.0), (new, native, scale)):
         model = native_runtime_text_smoke.RuntimeCPU(source, replay_image(image, source), report, text, bytes(32), 16,
-                                                     width=984, height=628, scale=scale, dialogue=True)
+                                                     width=984, height=628, scale=current_scale, dialogue=True)
         model.write(model.TEXT, text + b"\0")
         model.r[4] = model.TEXT
         result = model.run()
@@ -76,23 +78,26 @@ def check_layout(source, old, new, previous, native):
         raise ValueError("Scale changed raw text progress")
     short = b"Readable dialogue example."
     widths = []
-    for image, report, scale in ((old, previous, 1.0), (new, native, 0.85)):
+    for image, report, current_scale in ((old, previous, 1.0), (new, native, scale)):
         model = native_runtime_text_smoke.RuntimeCPU(source, replay_image(image, source), report, short, bytes(32), 16,
-                                                     width=984, height=628, scale=scale, dialogue=True)
+                                                     width=984, height=628, scale=current_scale, dialogue=True)
         model.write(model.TEXT, short + b"\0")
         model.r[4] = model.TEXT
         result = model.run()
-        if any(abs(span["scale_x"] - scale) > 0.000001 or
-               abs(span["scale_y"] - scale) > 0.000001 for span in result["spans"]):
+        if any(abs(span["scale_x"] - current_scale) > 0.000001 or
+               abs(span["scale_y"] - current_scale) > 0.000001 for span in result["spans"]):
             raise ValueError("Scanner did not retain the requested uniform scale")
         widths.append(result["final_cursor"][0])
-    if not 0 < widths[1] < widths[0] or abs(widths[1] / widths[0] - 0.85) > 0.02:
-        raise ValueError("Dialogue measurement did not shrink by approximately 15%")
+    if not 0 < widths[1] < widths[0] or abs(widths[1] / widths[0] - scale) > 0.02:
+        raise ValueError(
+            f"Dialogue measurement did not shrink to approximately {scale:.0%}: widths={widths}")
     return {"source_page_count": results[0][1]["page_count"],
             "smaller_page_count": results[1][1]["page_count"],
-            "sample_cursor_widths": widths,
+            "sample_cursor_widths": widths, "scale": scale,
             "text_and_progress_preserved": True,
             "limitation": "Synthetic combined literal; not a live VM, audio, or GPU test"}
+
+
 
 
 def main():

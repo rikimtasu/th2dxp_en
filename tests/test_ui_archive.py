@@ -211,6 +211,48 @@ class DatStagingTests(unittest.TestCase):
         self.assertFalse((installed / "new.dat").exists())
 
 
+class SourceVariantComparisonTests(unittest.TestCase):
+    def test_exact_changed_partition_keeps_ui_and_font_inputs_bound(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, variant = Path(directory) / "old.dat", Path(directory) / "fresh.dat"
+            files = [("_initial/font.tpl", b"font", False), ("n/8000.bin", b"old!", False)]
+            archive(source, files)
+            archive(variant, [files[0], ("n/8000.bin", b"new!", False)])
+            report = ui_archive._compare_variant_dat(source, variant, ("n/8000.bin",))
+            self.assertEqual(report["identical_entries"], 1)
+            self.assertEqual(report["changed_entries"], ["n/8000.bin"])
+            self.assertTrue(report["ui_font_source_entries_identical"])
+
+    def test_payload_change_without_table_change_is_not_missed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, variant = Path(directory) / "old.dat", Path(directory) / "fresh.dat"
+            archive(source, [("_initial/font.tpl", b"font", False), ("n/8200.bin", b"old!", False)])
+            archive(variant, [("_initial/font.tpl", b"font", False), ("n/8200.bin", b"new!", False)])
+            with self.assertRaisesRegex(ValueError, "unapproved entry: n/8200.bin"):
+                ui_archive._compare_variant_dat(source, variant, ())
+
+    def test_changed_font_and_missing_expected_difference_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, variant = Path(directory) / "old.dat", Path(directory) / "fresh.dat"
+            archive(source, [("_initial/font.tpl", b"font", False)])
+            archive(variant, [("_initial/font.tpl", b"oops", False)])
+            with self.assertRaisesRegex(ValueError, "unapproved entry"):
+                ui_archive._compare_variant_dat(source, variant, ("n/8000.bin",))
+            variant.write_bytes(source.read_bytes())
+            with self.assertRaisesRegex(ValueError, "partition"):
+                ui_archive._compare_variant_dat(source, variant, ("n/8000.bin",))
+
+    def test_changed_header_is_not_treated_as_an_entry_variant(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, variant = Path(directory) / "old.dat", Path(directory) / "fresh.dat"
+            raw, _ = archive(source, [("n/8000.bin", b"old!", False)])
+            changed = bytearray(raw)
+            changed[4] ^= 1
+            variant.write_bytes(changed)
+            with self.assertRaisesRegex(ValueError, "header or filename"):
+                ui_archive._compare_variant_dat(source, variant, ("n/8000.bin",))
+
+
 class NativeChunkContractTests(unittest.TestCase):
     def packed(self, raw):
         return scenario_source.pack(raw, KIT)
@@ -301,6 +343,27 @@ class NativeChunkContractTests(unittest.TestCase):
 
 
 class SdatBoundaryTests(unittest.TestCase):
+    def test_only_exact_explicit_legacy_source_warnings_are_permitted(self):
+        success = "File successfully parsed!\nFile successfully decrypted!\n"
+        with tempfile.TemporaryDirectory() as directory:
+            for index, (message, allow, accepted) in enumerate((
+                    (success + ui_archive.LEGACY_SOURCE_WARNINGS[0], (), False),
+                    (success + ui_archive.LEGACY_SOURCE_WARNINGS[0], ui_archive.LEGACY_SOURCE_WARNINGS, True),
+                    (success + "WARNING: Other failure!", ui_archive.LEGACY_SOURCE_WARNINGS, False),
+                    (success + "ERROR: Invalid data", ui_archive.LEGACY_SOURCE_WARNINGS, False))):
+                def run(command, *, stdout, stderr, check):
+                    stdout.write(message.encode())
+                    return SimpleNamespace(returncode=0)
+                with patch.object(ui_archive.subprocess, "run", side_effect=run):
+                    log = Path(directory) / f"{index}.log"
+                    if accepted:
+                        ui_archive._invoke(["synthetic"], log, ("File successfully decrypted!",),
+                                           allowed_warnings=allow)
+                    else:
+                        with self.assertRaisesRegex(ValueError, "did not complete"):
+                            ui_archive._invoke(["synthetic"], log, ("File successfully decrypted!",),
+                                               allowed_warnings=allow)
+
     def test_original_header_semantics_are_read_not_guessed(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "data.sdat"
@@ -376,7 +439,17 @@ class SyntheticRoundtripTests(unittest.TestCase):
     def test_wrong_backup_hash_fails_before_creating_staged_outputs(self):
         self._stage_with_synthetic_container(corrupt=False, backup=True, bad_backup=True)
 
-    def _stage_with_synthetic_container(self, corrupt, backup=False, bad_backup=False):
+    def test_pinned_variant_is_decrypted_compared_and_preserved(self):
+        self._stage_with_synthetic_container(corrupt=False, variant=True)
+
+    def test_wrong_variant_decrypted_dat_fails_closed(self):
+        self._stage_with_synthetic_container(corrupt=False, variant=True, bad_variant_dat=True)
+
+    def test_variant_cannot_replace_its_source_specific_entries(self):
+        self._stage_with_synthetic_container(corrupt=False, variant=True, replace_variant_entry=True)
+
+    def _stage_with_synthetic_container(self, corrupt, backup=False, bad_backup=False,
+                                       variant=False, bad_variant_dat=False, replace_variant_entry=False):
         with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
             root = Path(directory)
             source = root / "source.dat"
@@ -398,13 +471,26 @@ class SyntheticRoundtripTests(unittest.TestCase):
                                            "source_sha256": assets.sha(installed / "data.sdat")}))
             original_backup = root / "original-data.sdat"
             options = {}
+            if variant:
+                _, entries = DAT.parse_archive_table(source)
+                variant_bytes = bytearray(source.read_bytes())
+                variant_bytes[entries[1].file_offset] ^= 1
+                original_backup.write_bytes(sdat_header(len(variant_bytes)) + variant_bytes)
+                variant_sha = hashlib.sha256(variant_bytes).hexdigest()
+                stack.enter_context(patch.object(ui_archive, "SOURCE_VARIANTS", {
+                    assets.sha(original_backup): {"name": "synthetic-variant",
+                                                 "source_size": original_backup.stat().st_size,
+                                                 "dat_size": len(variant_bytes),
+                                                 "dat_sha256": "0" * 64 if bad_variant_dat else variant_sha,
+                                                 "changed_entries": ("sys/1.tpl",)}}))
+                options["source_sdat"] = original_backup
             if backup:
                 original_backup.write_bytes((installed / "data.sdat").read_bytes()
                                             + (b"wrong original" if bad_backup else b""))
                 (installed / "data.sdat").write_bytes(sdat_header(source.stat().st_size + 32))
                 options["source_sdat"] = original_backup
             installed_snapshot = (installed / "data.sdat").read_bytes()
-            backup_snapshot = original_backup.read_bytes() if backup else None
+            backup_snapshot = original_backup.read_bytes() if backup or variant else None
             for name, value in (("ROOT", root), ("SOURCE", source), ("MANIFEST", manifest)):
                 stack.enter_context(patch.object(ui_archive, name, value))
             stack.enter_context(patch.object(assets, "BINARY", binary))
@@ -413,7 +499,7 @@ class SyntheticRoundtripTests(unittest.TestCase):
             stack.enter_context(patch.object(ui_archive.build_sdat_tool, "validated_tool",
                                             return_value=(binary, {"synthetic_crypto_boundary": True})))
 
-            def invoke(command, log, successes):
+            def invoke(command, log, successes, **kwargs):
                 log.write_text("\n".join(successes))
                 if command[1] == "--verify":
                     return
@@ -430,6 +516,7 @@ class SyntheticRoundtripTests(unittest.TestCase):
             stack.enter_context(patch.object(ui_archive, "_invoke", side_effect=invoke))
             output = root / "build/ui-stage"
             original_source, original_manifest = source.read_bytes(), manifest.read_bytes()
+            replacements = {"sys/1.tpl" if replace_variant_entry else "sys/0.tpl": b"actual replacement"}
             if bad_backup:
                 with self.assertRaisesRegex(ValueError, "Explicit source SDAT SHA-256"):
                     ui_archive.stage({"sys/0.tpl": b"actual replacement"}, output, **options)
@@ -438,15 +525,28 @@ class SyntheticRoundtripTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "complete DAT SHA-256"):
                     ui_archive.stage({"sys/0.tpl": b"actual replacement"}, output, **options)
                 self.assertFalse((output / "report.json").exists())
+            elif bad_variant_dat or replace_variant_entry:
+                message = "decrypted DAT" if bad_variant_dat else "preserve source-variant-specific"
+                with self.assertRaisesRegex(ValueError, message):
+                    ui_archive.stage(replacements, output, **options)
+                self.assertFalse((output / "report.json").exists())
             else:
-                report = ui_archive.stage({"sys/0.tpl": b"actual replacement"}, output, **options)
+                report = ui_archive.stage(replacements, output, **options)
                 self.assertEqual(report["roundtrip"]["complete_dat_sha256"], assets.sha(output / "data.dat"))
                 self.assertEqual(report["sdat"]["sha256"], assets.sha(output / "data.sdat"))
                 self.assertTrue(report["roundtrip"]["matches_staged_dat"])
                 self.assertFalse(report["runtime_accepted"])
-                self.assertEqual(report["original_sdat"]["full_archive_hash_rechecked"], backup)
-                if backup:
+                self.assertEqual(report["original_sdat"]["full_archive_hash_rechecked"], backup or variant)
+                if backup or variant:
                     self.assertEqual(report["original_sdat"]["path"], str(original_backup))
+                if variant:
+                    self.assertEqual(report["source_variant"]["comparison"]["identical_entries"], 3515)
+                    self.assertEqual(report["dat"]["source_sha256"], variant_sha)
+                    self.assertFalse(report["source_variant"]["source_cryptographically_authenticated"])
+                    self.assertEqual((output / "source-variant.dat").read_bytes(), bytes(variant_bytes))
+                    _, rebuilt_entries = DAT.parse_archive_table(output / "data.dat")
+                    self.assertEqual(DAT.decompress_archive_entry((output / "data.dat").read_bytes(),
+                                                                 rebuilt_entries[1])[0], bytes([0]))
                 self.assertTrue((output / "report.json").is_file())
                 with self.assertRaisesRegex(ValueError, "already exists"):
                     ui_archive.stage({"sys/0.tpl": b"different"}, output)
@@ -454,7 +554,7 @@ class SyntheticRoundtripTests(unittest.TestCase):
             self.assertEqual(source.read_bytes(), original_source)
             self.assertEqual(manifest.read_bytes(), original_manifest)
             self.assertEqual((installed / "data.sdat").read_bytes(), installed_snapshot)
-            if backup:
+            if backup or variant:
                 self.assertEqual(original_backup.read_bytes(), backup_snapshot)
 
 

@@ -1,4 +1,4 @@
-"""Diagnostic-only 85% normal-dialogue scale; never modifies installed files."""
+"""Diagnostic-only normal-dialogue scale; never modifies installed files."""
 from __future__ import annotations
 
 import copy
@@ -10,11 +10,13 @@ import project
 
 HOOK = 0x64004
 CONTINUE = 0x64008
-SCALE_BITS = 0x3F59999A  # nearest binary32 to 0.85
+SCALE_BITS = 0x3F59999A  # nearest binary32 to the default 0.85
 
 
-def apply(image, native, *, staged=None):
+def apply(image, native, *, staged=None, scale=0.85):
     """Patch normal dialogue in a source-bound image, never the shared font setup."""
+    if not 0.0 < scale < 1.0:
+        raise ValueError("Dialogue scale must be strictly between zero and one")
     staged = image if staged is None else staged
     if not native_layout_patch.native_code_matches(image, staged, native):
         raise ValueError("Dialogue scale requires the complete pinned native template")
@@ -33,12 +35,13 @@ def apply(image, native, *, staged=None):
     start = native["rx_extension"]["file_end"]
     if any(image[start:native_layout_patch.CAVE_END]) or any(source[start:native_layout_patch.CAVE_END]):
         raise ValueError("Dialogue scale needs the original empty RX tail")
+    scale_bits = struct.unpack(">I", struct.pack(">f", scale))[0]
     asm = native_layout_patch._assembler()
     address = start + 0x10000
     # Hook follows the sole normal-dialogue constructor call at 64000. Backlog
     # is constructed by the separate call at 64014. Save condition and GPRs;
     # write both scales equally, leaving glyph advances and font pixels intact.
-    body = """
+    body = f"""
         stdu 1,-0x50(1)
         std 0,0x20(1)
         std 11,0x28(1)
@@ -46,8 +49,8 @@ def apply(image, native, *, staged=None):
         std 0,0x30(1)
         cmpwi 3,0
         beq done
-        lis 11,0x3f59
-        ori 11,11,0x999a
+        lis 11,{scale_bits >> 16:#x}
+        ori 11,11,{scale_bits & 0xffff:#x}
         stw 11,0xa4(3)
         stw 11,0xa8(3)
     done:
@@ -74,17 +77,18 @@ def apply(image, native, *, staged=None):
         raise ValueError("Dialogue scale RX mapping does not end at the reviewed tail")
     end = start + len(code)
     struct.pack_into(">QQ", result, phoff + 32, end, end)
+    percent = round(scale * 100)
+    purpose = f"normal_dialogue_scale_{percent}_percent"
     report = copy.deepcopy(native)
     report["rx_extension"].update(file_end=end, new_filesz=end, new_memsz=end,
                                   size=end - report["rx_extension"]["file_begin"])
     report["patches"].append({"va": hex(HOOK), "file_offset": hex(off),
                               "source_before": source[off:off + 4].hex(),
                               "input_before": image[off:off + 4].hex(),
-                              "after": hook.hex(), "purpose": "normal_dialogue_scale_85_percent"})
-    report["injected_blocks"].append({"name": "normal_dialogue_scale_85_percent",
-                                       "va": hex(address), "size": len(code),
-                                       "sha256": project.digest(code)})
-    report["dialogue_scale"] = {"factor": 0.85, "scope": "normal dialogue constructor only",
+                              "after": hook.hex(), "purpose": purpose})
+    report["injected_blocks"].append({"name": purpose, "va": hex(address),
+                                       "size": len(code), "sha256": project.digest(code)})
+    report["dialogue_scale"] = {"factor": scale, "scope": "normal dialogue constructor only",
                                 "tracking_changed": False, "runtime_accepted": False}
     report["output_sha256"] = project.digest(result)
     if not native_layout_patch.native_code_matches(result, result, report):

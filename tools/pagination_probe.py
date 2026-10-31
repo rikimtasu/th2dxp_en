@@ -11,7 +11,6 @@ from pathlib import Path
 import tempfile
 
 import gates
-import native_layout_patch
 import native_layout_smoke
 import native_pagination_patch
 import native_pagination_smoke

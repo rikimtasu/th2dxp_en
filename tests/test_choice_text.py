@@ -3,6 +3,7 @@ from pathlib import Path
 import struct
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import choice_text
@@ -14,6 +15,17 @@ class RawLengthFallback:
     @staticmethod
     def read_text_records_structured(*args):
         # Exercise scan_sites' raw length-delimited fallback, not codec decoding.
+        return []
+
+
+class LiteralChoiceCodec(RawLengthFallback):
+    # These fixtures contain no embedded pointers or label-name operands.
+    @staticmethod
+    def _find_label_name_operand_spans(*args):
+        return []
+
+    @staticmethod
+    def _scan_exact_le32_label_offset_hits(*args, **kwargs):
         return []
 
 
@@ -29,6 +41,59 @@ def option(raw):
 
 
 class ChoiceTextTests(unittest.TestCase):
+    def test_unchanged_rebuild_scans_the_source_once(self):
+        original = scenario(option(b"Keep this caption."))
+        edited = choice_text.units(original, LiteralChoiceCodec)
+        with patch.object(choice_text, "records", wraps=choice_text.records) as scan:
+            self.assertEqual(choice_text.rebuild(original, edited, LiteralChoiceCodec,
+                                                 allow_growth=False), original)
+        scan.assert_called_once_with(original, LiteralChoiceCodec)
+
+    def test_rebuild_uses_current_offsets_after_message_growth(self):
+        caption = option("公園へ".encode("cp932"))
+        edited = choice_text.units(scenario(caption), LiteralChoiceCodec)
+        translated = "How about going to an amusement park?"
+        edited[0]["items"][0]["translated_text"] = translated
+        raw = b"A longer preceding message."
+        message = RawLengthFallback.TEXT_OPCODE + struct.pack("<H", len(raw)) + raw
+        terminal = b"\x02\x08\x01\x02"
+        original = scenario(message + caption + terminal, [len(message) + len(caption)])
+        rebuilt = choice_text.rebuild(original, edited, LiteralChoiceCodec, allow_growth=True)
+        self.assertEqual(choice_text.records(rebuilt, LiteralChoiceCodec)[0]["text"], translated)
+        self.assertEqual(rebuilt[52:52 + len(message)], message)
+        target = 52 + struct.unpack_from("<I", rebuilt, 48)[0]
+        self.assertEqual(rebuilt[target:], terminal)
+
+    def test_rebuild_retains_identity_encoding_control_and_capacity_guards(self):
+        original = scenario(option(b"Go *nnk"))
+        cases = [
+            ("count", [], "caption count", True),
+            ("order", {"choice_index": 1}, "operand order/text", True),
+            ("source", {"original_text": "Wrong source"}, "operand order/text", True),
+            ("encoding", {"translated_text": "\u301c *nnk"}, "encoding or native", True),
+            ("controls", {"translated_text": "Go elsewhere"}, "encoding or native", True),
+            ("capacity", {"translated_text": "A longer choice *nnk"}, "manual engine acceptance", False),
+        ]
+        for name, changes, error, growth in cases:
+            with self.subTest(name):
+                edited = choice_text.units(original, LiteralChoiceCodec)
+                if name == "count":
+                    edited = changes
+                elif name == "order":
+                    edited[0].update(changes)
+                else:
+                    edited[0]["items"][0].update(changes)
+                with self.assertRaisesRegex(ValueError, error):
+                    choice_text.rebuild(original, edited, LiteralChoiceCodec, allow_growth=growth)
+
+    def test_rebuild_still_rejects_unmodeled_direct_label_offsets(self):
+        original = scenario(option(b"Go"))
+        edited = choice_text.units(original, LiteralChoiceCodec)
+        edited[0]["items"][0]["translated_text"] = "Go to the park"
+        with patch.object(LiteralChoiceCodec, "_scan_exact_le32_label_offset_hits", return_value=[1]):
+            with self.assertRaisesRegex(ValueError, "Unmodeled direct label offset"):
+                choice_text.rebuild(original, edited, LiteralChoiceCodec, allow_growth=True)
+
     def test_embedded_signature_in_dialogue_is_not_an_option(self):
         fake = option(b"not an option")
         message = RawLengthFallback.TEXT_OPCODE + struct.pack("<H", len(fake)) + fake

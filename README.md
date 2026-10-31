@@ -2,16 +2,17 @@
 
 Unofficial English localization of **ToHeart2 DX PLUS** (PS3, `BLJM60381`).
 
-The English base-game installer is a **preview, not a finished patch**.
-**v0.2** includes QC/spacing corrections and 85% dialogue size. The player tested
-this game payload and supplied three positive screenshots; comprehensive runtime,
-save and route acceptance is still incomplete. Project tools never launch an
-emulator and never touch your saves.
+The English installer is a **preview, not a finished patch**. **v0.3** includes
+expanded translation drafts, Japanese/Latin GenInterfaceJP and 75% dialogue size.
+Its exact build has not been runtime-tested, and bilingual review is incomplete.
+The earlier v0.2 payload received limited player testing; those results do not
+establish acceptance of v0.3. Project tools never launch an emulator or touch saves.
+See [`docs/release-v0.3.md`](docs/release-v0.3.md) for scope and limitations.
 
 ## Install (players)
 
-1. Download `th2dxp_en-v0.2-installer.zip` from
-   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.2), unpack it
+1. Download `th2dxp_en-v0.3-installer.zip` from
+   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.3), unpack it
    and run `th2dxp_patch_gui.exe` — Windows, no Python.
 2. Point it at the folder holding `PS3_GAME/USRDIR`.
 3. If upgrading an older patch, press **Restore original** first, then **Install**.

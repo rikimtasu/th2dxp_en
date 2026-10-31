@@ -5,10 +5,12 @@ import sys
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import patch_data
+import patch_game
 from patch_fixtures import elf_like, make_dat, make_sdat, patched_dat, sha
 
 
@@ -26,6 +28,44 @@ class TempFolderTests(unittest.TestCase):
 
     def make_pair(self, pristine, patched):
         return self.write("pristine.bin", pristine), self.write("patched.bin", patched)
+
+
+class SharedHashTests(TempFolderTests):
+    def test_hash_and_progress_are_preserved_for_both_entry_points(self):
+        path = self.write("hash.bin", b"0123456789")
+        for hasher in (patch_data.sha256_file, patch_game.sha256_file):
+            with self.subTest(hasher=hasher):
+                progress = []
+                with patch.object(patch_data, "BLOCK", 4):
+                    actual = hasher(str(path), lambda done, total: progress.append((done, total)))
+                self.assertEqual(actual, sha(path.read_bytes()))
+                self.assertEqual(progress, [(4, 10), (8, 10), (10, 10)])
+
+    def test_empty_file_hash_needs_no_progress_callback(self):
+        path = self.write("empty.bin", b"")
+        for hasher in (patch_data.sha256_file, patch_game.sha256_file):
+            progress = []
+            self.assertEqual(hasher(path, lambda *args: progress.append(args)), sha(b""))
+            self.assertEqual(progress, [])
+
+
+class EditRunTests(unittest.TestCase):
+    def test_run_edges_and_gap_thresholds(self):
+        cases = [
+            (b"", b"tail", 16, []),
+            (b"same", b"same", 16, []),
+            (b"abc", b"abc-tail", 16, []),
+            (b"abcd", b"aX", 16, [(1, 1)]),
+            (b"abcdef", b"XbcdeY", 4, [(0, 6)]),
+            (b"abcdef", b"XbcdeY", 3, [(0, 1), (5, 1)]),
+            (b"abcdef", b"aXXdYf", 0, [(1, 2), (4, 1)]),
+            (b"abcdef", b"aXXdYf", -1, [(1, 2), (4, 1)]),
+            (b"abcdef", b"aXXdYf", 1, [(1, 4)]),
+            (b"abc", b"XYZ-tail", 0, [(0, 3)]),
+        ]
+        for pristine, patched, gap, expected in cases:
+            with self.subTest(pristine=pristine, patched=patched, gap=gap):
+                self.assertEqual(patch_data.edit_runs(pristine, patched, gap=gap), expected)
 
 
 class ElfPatchTests(TempFolderTests):

@@ -3,7 +3,6 @@ import argparse
 import json
 from pathlib import Path
 import struct
-import sys
 
 from PIL import Image
 import project

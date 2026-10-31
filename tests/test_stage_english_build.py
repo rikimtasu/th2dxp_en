@@ -3,6 +3,8 @@ from pathlib import Path
 import struct
 import sys
 import unittest
+import tempfile
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import project
@@ -80,6 +82,81 @@ class PayloadProofTests(unittest.TestCase):
         view.append({"end_reason": "eof", "items": [dict(view[0]["items"][0])]})
         with self.assertRaisesRegex(ValueError, "items for"):
             stage.expect_items("script_0000.json", self.data, view, self.kit)
+
+
+class JapaneseArchiveInputsTests(unittest.TestCase):
+    def test_explicit_original_is_forwarded_with_all_four_font_replacements(self):
+        import ui_archive
+        import ui_probe
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / 'original.sdat'
+            source.write_bytes(b'read-only synthetic original')
+            graphics = {'latin_font': {'output_tpl_sha256': 'latin', 'source_tpl_sha256': 'source'}}
+            replacements = {'_initial/font.tpl': b'jp0', '_initial/font1.tpl': b'jp1',
+                            '_initial/font2.tpl': b'jp2', '_initial/font3.tpl': b'jp3'}
+            applied = {'punct_manifest': {'base_output_tpl_sha256': 'latin', 'base_tpl_sha256': 'source',
+                                          'output_tpl_sha256': 'punct'},
+                       'font_tpl': b'jp0',
+                       'japanese_manifest': {'base_punctuation_tpl_sha256': 'punct'},
+                       'japanese_replacements': replacements}
+            with patch.object(ui_probe, 'graphics_inputs', return_value=({}, graphics)):
+                with patch.object(ui_archive, 'stage', return_value={'verified': True}) as pack:
+                    result, actual_graphics = stage.stage_archive(Path(temporary) / 'out', applied,
+                                                                   source_sdat=source)
+            self.assertEqual(result, {'verified': True})
+            self.assertIs(actual_graphics, graphics)
+            pack.assert_called_once_with(replacements, Path(temporary) / 'out/assets', source_sdat=source)
+            self.assertEqual(source.read_bytes(), b'read-only synthetic original')
+
+    def test_foreign_japanese_base_is_not_staged(self):
+        import ui_archive
+        import ui_probe
+        graphics = {'latin_font': {'output_tpl_sha256': 'latin', 'source_tpl_sha256': 'source'}}
+        applied = {'punct_manifest': {'base_output_tpl_sha256': 'latin', 'base_tpl_sha256': 'source',
+                                      'output_tpl_sha256': 'punct'},
+                   'font_tpl': b'jp', 'japanese_manifest': {'base_punctuation_tpl_sha256': 'foreign'},
+                   'japanese_replacements': {}}
+        with patch.object(ui_probe, 'graphics_inputs', return_value=({}, graphics)):
+            with patch.object(ui_archive, 'stage') as pack:
+                with self.assertRaisesRegex(ValueError, 'not chained'):
+                    stage.stage_archive(Path('build/new'), applied)
+                pack.assert_not_called()
+
+
+class AuxiliarySubsetTests(unittest.TestCase):
+    """font3 can only hold the aliases its G3 spans actually draw."""
+
+    def aliases(self):
+        return {'A': (0x8260, 0), 'b': (0x8261, 1), 'C': (0x8262, 2),
+                'k': (0x8263, 3), 'x': (0x8264, 4), 'y': (0x8265, 5),
+                ' ': (0x8140, 6)}
+
+    def test_only_the_requested_font_spans_contribute_codes(self):
+        scripts = {'script_0001.json': [{'items': [
+            {'kind': 'text', 'original_text': '<', 'translated_text': '<'},
+            {'kind': 'text', 'original_text': 'G3', 'translated_text': 'G3'},
+            {'kind': 'text', 'original_text': '>', 'translated_text': '>'},
+            {'kind': 'text', 'original_text': 'Ab', 'translated_text': 'Ab'},
+            {'kind': 'text', 'original_text': '<', 'translated_text': '<'},
+            {'kind': 'text', 'original_text': 'G2', 'translated_text': 'G2'},
+            {'kind': 'text', 'original_text': '>', 'translated_text': '>'},
+            {'kind': 'text', 'original_text': 'CC', 'translated_text': 'CC'},
+            {'kind': 'text', 'original_text': '<', 'translated_text': '<'},
+            {'kind': 'text', 'original_text': 'G0', 'translated_text': 'G0'},
+            {'kind': 'text', 'original_text': '>', 'translated_text': '>'},
+            {'kind': 'text', 'original_text': 'A', 'translated_text': 'A'},
+        ]}]}
+        with patch.object(stage.geninterface_latin, 'aliases', return_value=self.aliases()):
+            codes = stage.auxiliary_latin_codes(scripts, b'source', 3)
+        self.assertEqual(codes, {0x8260, 0x8261})
+
+    def test_inline_tags_and_backslash_controls_are_stripped_before_lookup(self):
+        scripts = {'script_0001.json': [{'items': [
+            {'kind': 'text', 'original_text': 'x<G3>y', 'translated_text': 'x\\ky'},
+        ]}]}
+        with patch.object(stage.geninterface_latin, 'aliases', return_value=self.aliases()):
+            codes = stage.auxiliary_latin_codes(scripts, b'source', 3)
+        self.assertEqual(codes, {0x8264, 0x8265})
 
 
 if __name__ == "__main__":

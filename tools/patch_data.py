@@ -169,25 +169,15 @@ def edit_runs(pristine, patched, *, gap=MERGE_GAP):
     Bytes past the pristine length are not edits: they are the appended segment
     and are shipped separately, so the runs always stay inside the source image.
     """
-    common = min(len(pristine), len(patched))
     runs = []
-    start = None
-    for index in range(common):
-        if pristine[index] != patched[index]:
-            if start is None:
-                start = index
-        elif start is not None:
-            runs.append([start, index - start])
-            start = None
-    if start is not None:
-        runs.append([start, common - start])
-    merged = []
-    for offset, length in runs:
-        if merged and offset - (merged[-1][0] + merged[-1][1]) <= gap:
-            merged[-1][1] = offset + length - merged[-1][0]
+    for index in range(min(len(pristine), len(patched))):
+        if pristine[index] == patched[index]:
+            continue
+        if runs and (index == runs[-1][1] or index - runs[-1][1] <= gap):
+            runs[-1][1] = index + 1
         else:
-            merged.append([offset, length])
-    return [tuple(run) for run in merged]
+            runs.append([index, index + 1])
+    return [(start, end - start) for start, end in runs]
 
 
 def build_elf_patch(pristine_path, patched_path, output_dir):

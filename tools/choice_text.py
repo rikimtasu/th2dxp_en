@@ -175,24 +175,22 @@ def splice_literals(payload, changes):
 
 def rebuild(payload, edited, kit, *, allow_growth):
     """Apply validated companion translated_text fields after message rebuilding."""
-    original = units(payload, kit)
-    if len(original) != len(edited):
-        raise ValueError("Choice caption count changed")
     source_records = records(payload, kit)
+    if len(source_records) != len(edited):
+        raise ValueError("Choice caption count changed")
     changes = []
-    for before, after, record in zip(original, edited, source_records):
-        old, new = before["items"][0], after["items"][0]
+    for index, (record, after) in enumerate(zip(source_records, edited)):
+        new = after["items"][0]
         # Message growth may move these offsets; identities/order/text stay fixed.
-        if (old["original_text"] != new["original_text"] or
-                before["choice_index"] != after["choice_index"]):
+        if record["text"] != new["original_text"] or index != after["choice_index"]:
             raise ValueError("Choice companion no longer matches source operand order/text")
         text = new["translated_text"]
         encoded = text.encode("cp932", errors="strict")
-        if encoded.decode("cp932") != text or project.engine_controls(text) != project.engine_controls(old["original_text"]):
+        if encoded.decode("cp932") != text or project.engine_controls(text) != project.engine_controls(record["text"]):
             raise ValueError("Choice encoding or native inline controls changed")
-        if not allow_growth and len(encoded) > old["length"]:
+        if not allow_growth and len(encoded) > record["end"] - record["operand_offset"] - 3:
             raise ValueError("Native choice growth requires complete manual engine acceptance")
-        if text != old["original_text"]:
+        if text != record["text"]:
             changes.append((record["operand_offset"], record["end"], encoded))
     if not changes:
         return payload

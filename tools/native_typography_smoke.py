@@ -33,6 +33,12 @@ class GlyphCPU(save_preview_smoke.PreviewCPU):
 
     def step(self):
         mnemonic, operands = self.code[self.pc]
+        if mnemonic == "mfctr":
+            self.r[int(operands[1:])] = self.ctr
+            self.executed.add(self.pc)
+            self.pc += 4
+            self.steps += 1
+            return
         if mnemonic == ".byte":
             word = self.get(self.pc, 4)
             if word >> 26 == 31 and (word >> 1) & 1023 == 551:

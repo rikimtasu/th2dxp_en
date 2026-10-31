@@ -34,6 +34,18 @@ SCENARIO_TOOL = ROOT / "vendor/TH2DXP_KIT/scenario_eboot_tool.py"
 NATIVE_PROPS = b"\x5d\x00\x20\x00\x00"
 LIMIT = 0xFFFFFFFF
 BLOCK = 4 * 1024 * 1024
+# Separately identified fresh-dump source, never a replacement for MANIFEST.
+SOURCE_VARIANTS = {
+    "389bf3cabdb9cdf3044b5be1dd4789c43be351f24bfa70a22e0d2e2fca5aa0f1": {
+        "name": "fresh-bljm60381",
+        "source_size": 2185195888,
+        "dat_size": 2180935968,
+        "dat_sha256": "324d93e49a620c3b2d0dab8451aba0106ce2b36762d4ecd42287d5ca8dc230c7",
+        "changed_entries": tuple(f"n/{code:04x}.bin" for code in range(0x8000, 0x8210, 0x10)),
+    },
+}
+LEGACY_SOURCE_WARNINGS = ("WARNING: Header hash is invalid!",
+                          "WARNING: Metadata section hash is invalid!")
 
 
 def _digest(data: bytes) -> str:
@@ -313,12 +325,49 @@ def _sdat_header(path: Path) -> dict:
             "dat_size": size, "header_sha256": _digest(header)}
 
 
-def _invoke(command: list[str], log: Path, successes: tuple[str, ...]) -> None:
+def _compare_variant_dat(source: Path, variant: Path, expected_changed: tuple[str, ...]) -> dict:
+    """Verify the exact source-entry partition; UI/font inputs must be identical."""
+    dat = _dat_module()
+    old_meta, old_entries = _table(source, dat)
+    new_meta, new_entries = _table(variant, dat, len(old_entries))
+    if old_meta["pre_entries_hex"] != new_meta["pre_entries_hex"]:
+        raise ValueError("Source variant changed the DAT header or filename region")
+    changed, identical = [], 0
+    with source.open("rb") as old_stream, variant.open("rb") as new_stream:
+        with mmap.mmap(old_stream.fileno(), 0, access=mmap.ACCESS_READ) as old_blob:
+            with mmap.mmap(new_stream.fileno(), 0, access=mmap.ACCESS_READ) as new_blob:
+                for old, new in zip(old_entries, new_entries):
+                    if any(getattr(old, key) != getattr(new, key) for key in
+                           ("index", "name", "name_offset", "unknown0", "unknown1")):
+                        raise ValueError("Source variant changed entry order, names or unknown fields")
+                    old_size = old.compressed_size or old.uncompressed_size
+                    new_size = new.compressed_size or new.uncompressed_size
+                    same = vars(old) == vars(new)
+                    for at in range(0, max(old_size, new_size), BLOCK):
+                        if (old_blob[old.file_offset + at:old.file_offset + min(at + BLOCK, old_size)] !=
+                                new_blob[new.file_offset + at:new.file_offset + min(at + BLOCK, new_size)]):
+                            same = False
+                            break
+                    if same:
+                        identical += 1
+                    else:
+                        if new.name not in expected_changed:
+                            raise ValueError(f"Source variant changed an unapproved entry: {new.name}")
+                        changed.append(new.name)
+    if set(changed) != set(expected_changed):
+        raise ValueError("Source variant changed-entry partition differs from the reviewed inventory")
+    return {"identical_entries": identical, "changed_entries": changed,
+            "entry_count": len(new_entries), "ui_font_source_entries_identical": True}
+
+
+def _invoke(command: list[str], log: Path, successes: tuple[str, ...], *,
+            allowed_warnings: tuple[str, ...] = ()) -> None:
     with log.open("xb") as stream:
         result = subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT, check=False)
     messages = log.read_text(encoding="utf-8", errors="replace")
+    checked = "\n".join(line for line in messages.splitlines() if line not in allowed_warnings)
     if (result.returncode or any(message not in messages for message in successes)
-            or re.search(r"failed|error:|invalid", messages, re.IGNORECASE)):
+            or re.search(r"failed|error:|invalid|warning:", checked, re.IGNORECASE)):
         raise ValueError(f"make_npdata did not complete successfully; inspect {log}")
 
 
@@ -353,12 +402,20 @@ def stage(replacements: dict[str, bytes], output_dir: Path, *,
     else:
         original_sdat = Path(source_sdat).resolve()
     full_archive_hash_rechecked = source_sdat is not None
-    if full_archive_hash_rechecked and assets.sha(original_sdat) != manifest["source_sha256"]:
-        raise ValueError("Explicit source SDAT SHA-256 differs from immutable decryption provenance")
+    source_sha = assets.sha(original_sdat) if full_archive_hash_rechecked else manifest["source_sha256"]
+    variant = None
+    if source_sha != manifest["source_sha256"]:
+        variant = SOURCE_VARIANTS.get(source_sha)
+        if variant is None:
+            raise ValueError("Explicit source SDAT SHA-256 differs from immutable decryption provenance and known variants")
+        if original_sdat.stat().st_size != variant["source_size"]:
+            raise ValueError("Source variant SDAT size differs from its pinned identity")
     if _inside(original_sdat, output_dir):
         raise ValueError("Source SDAT must be outside the new staging directory")
     if manifest["output_size"] != SOURCE.stat().st_size or manifest["entry_count"] != 3516:
         raise ValueError("Source DAT size/count differs from immutable decryption provenance")
+    if variant is not None and assets.sha(SOURCE) != manifest["output_sha256"]:
+        raise ValueError("Reference DAT SHA-256 differs from immutable decryption provenance")
     binary = assets.BINARY.resolve()
     if not binary.is_file():
         raise ValueError("Existing work/make_npdata.exe is required; no automatic build is permitted")
@@ -372,17 +429,40 @@ def stage(replacements: dict[str, bytes], output_dir: Path, *,
     # An explicit immutable backup is read-only input, never copied over the
     # installed file or written back into project/manifest configuration.
     original_header = _sdat_header(original_sdat)
-    if original_header["dat_size"] != SOURCE.stat().st_size:
+    source_size = manifest["output_size"] if variant is None else variant["dat_size"]
+    if original_header["dat_size"] != source_size:
         raise ValueError("Original SDAT header length differs from recovered DAT")
     # DAT copy, encrypted output, and full temporary decrypted proof coexist.
-    required = 3 * (SOURCE.stat().st_size + sum(map(len, replacements.values()))) + 64 * 1024 * 1024
+    required = (3 + int(variant is not None)) * (source_size + sum(map(len, replacements.values()))) + 64 * 1024 * 1024
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     if shutil.disk_usage(output_dir.parent).free < required:
         raise ValueError("Insufficient free space for DAT, SDAT and complete roundtrip proof")
     output_dir.mkdir(exist_ok=False)
+    source_dat, dat_sha, variant_proof = SOURCE, manifest["output_sha256"], None
+    if variant is not None:
+        source_dat = output_dir / "source-variant.dat"
+        source_log = output_dir / "source-decryption.log"
+        source_args = [str(binary), "-v", "-d", str(original_sdat), str(source_dat), "0"]
+        # These two legacy warnings are retained, not authentication passes.
+        # Only the exact pinned encrypted/decrypted pair can take this path;
+        # output authentication and roundtrip still permit no warnings.
+        _invoke(source_args, source_log, ("File successfully parsed!", "File successfully decrypted!"),
+                allowed_warnings=LEGACY_SOURCE_WARNINGS)
+        dat_sha = variant["dat_sha256"]
+        if source_dat.stat().st_size != source_size or assets.sha(source_dat) != dat_sha:
+            raise ValueError("Source variant decrypted DAT differs from its pinned size/SHA-256")
+        if set(replacements) & set(variant["changed_entries"]):
+            raise ValueError("UI staging must preserve source-variant-specific entries")
+        variant_proof = {"name": variant["name"], "source_sdat_sha256": source_sha,
+                         "source_dat_sha256": dat_sha, "source_dat": str(source_dat),
+                         "comparison": _compare_variant_dat(SOURCE, source_dat, variant["changed_entries"]),
+                         "decryption_log": str(source_log), "command": source_args,
+                         "legacy_warnings": [line for line in source_log.read_text(encoding="utf-8").splitlines()
+                                             if line in LEGACY_SOURCE_WARNINGS],
+                         "source_cryptographically_authenticated": False}
     staged_dat, staged_sdat = output_dir / "data.dat", output_dir / "data.sdat"
-    dat_report = stage_dat(SOURCE, replacements, staged_dat,
-                           expected_sha256=manifest["output_sha256"], expected_entry_count=3516)
+    dat_report = stage_dat(source_dat, replacements, staged_dat,
+                           expected_sha256=dat_sha, expected_entry_count=3516)
     encrypt_log, decrypt_log = output_dir / "encryption.log", output_dir / "decryption.log"
     # argv includes the empty content-ID argument and key mode 0. No RAP argument:
     # the pinned parser dereferences it if supplied. -v satisfies decrypt argc>5.
@@ -411,15 +491,18 @@ def stage(replacements: dict[str, bytes], output_dir: Path, *,
             raise ValueError("SDAT roundtrip complete DAT SHA-256 differs")
     if MANIFEST.read_bytes() != manifest_bytes or _sdat_header(original_sdat) != original_header:
         raise ValueError("Read-only input provenance changed during staging")
-    if full_archive_hash_rechecked and assets.sha(original_sdat) != manifest["source_sha256"]:
+    if full_archive_hash_rechecked and assets.sha(original_sdat) != source_sha:
         raise ValueError("Read-only source SDAT changed during staging")
+    if variant is not None and assets.sha(source_dat) != dat_sha:
+        raise ValueError("Source variant DAT changed during staging")
     if assets.sha(staged_dat) != dat_report["output_sha256"]:
         raise ValueError("Staged DAT changed during encryption/roundtrip")
     report = {"schema_version": 1, "dat": dat_report,
               "decryption_manifest": {"path": str(MANIFEST), "sha256": _digest(manifest_bytes)},
               "original_sdat": {"path": str(original_sdat), "header": original_header,
-                                "manifest_sha256": manifest["source_sha256"],
+                                "manifest_sha256": source_sha,
                                 "full_archive_hash_rechecked": full_archive_hash_rechecked},
+              "source_variant": variant_proof,
               "sdat": {"path": str(staged_sdat), "size": staged_sdat.stat().st_size,
                        "sha256": assets.sha(staged_sdat), "header": staged_header},
               "toolchain": {"make_npdata_revision": revision, "binary": str(binary),
@@ -447,7 +530,7 @@ def main() -> None:
     parser.add_argument("output_dir", type=Path)
     parser.add_argument("--replace", action="append", required=True, metavar="ARCHIVE_NAME=FILE")
     parser.add_argument("--source-sdat", type=Path,
-                        help="Read-only original SDAT backup matching the decryption manifest SHA-256")
+                        help="Read-only SDAT matching the original manifest or an explicitly pinned source variant")
     args = parser.parse_args()
     replacements = {}
     for item in args.replace:

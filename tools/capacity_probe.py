@@ -1,7 +1,6 @@
 """Stage full-text growth in a separate segment; never patch production or deploy."""
 import copy
 import json
-from pathlib import Path
 import struct
 
 import flow_probe
