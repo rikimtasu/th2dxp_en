@@ -1,5 +1,13 @@
 # Decisions
 
+## 2026-11-01 — Replace v0.4 with the glossary-corrected pair
+
+The user explicitly requests a newly written ELF/SDAT pair from the corrected live scripts and replacement of **v0.4 both locally and on GitHub**. Stage separately at `build/english-glossary-v04-fresh-20261101/`; preserve the superseded diagnostic pair and archive the original local v0.4 package/executable before switching the canonical local paths. Retain both supported original archive variants and patch-only publication.
+
+This request authorizes replacing the existing v0.4 asset and repointing its tag to the matching release-source commit, not creating a v0.5 release or modifying older releases. Verify the original tag target before a lease-guarded update and retain the old release metadata/digest locally. Keep the version at 0.4 while identifying the glossary revision in the installer and notes.
+
+The new pair has no runtime test report. Do not transfer the earlier `53d1b3be…` pair's general user confirmation or fill any detailed manual/production observations. Require fresh same-build execution-position saves, including when upgrading from the original v0.4. No emulator launch, installed-game deployment or save changes are authorized.
+
 ## 2026-11-01 — Publish the tested current diagnostic as v0.4
 
 The user reports “current build tested” and explicitly requests releasing the current diagnostic pair as **v0.4 on GitHub**. Select `build/english-retained-review-fresh-20261101/`: ELF `53d1b3be…`, paired SDAT `646e64f9…`. Package these existing bytes as a separate patch-only Windows installer; do not reassemble the game or replace older releases. Preserve both supported source-archive recipes and their distinct native entries.

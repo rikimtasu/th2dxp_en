@@ -2,9 +2,17 @@
 
 **Only the user launches RPCS3.** No command here starts it or edits its configuration. All generated files remain under `build/` until manually selected.
 
+## v0.4 glossary-corrected replacement — 2026-11-01
+
+Current pair: `build/english-glossary-v04-fresh-20261101/EBOOT.elf` and its own `assets/data.sdat`. Exact identities and blank observations are in `work/qa/english-glossary-v04-20261101-results-to-fill.json`. This includes 4,633 additional glossary-name corrections across 388 files and supersedes the original v0.4 package, not its retained evidence.
+
+**No runtime test report exists for this replacement.** The earlier user's general confirmation applies only to the `53d1b3be…`/`646e64f9…` pair below. Do not copy its report or any old observations into the new form. All 24 general and four targeted fields start null.
+
+Upgrade through **Restore original → Install**, even from the original v0.4. Start a fresh New Game and create only new disposable same-build execution-position saves; preserve older/personal saves and exact original backups. Spot-check glossary spellings, contextual nicknames, honorifics, full-name order and split-name joins, then use the existing rendering/control/backlog/save observations below. Only the user launches RPCS3.
+
 ## Contraction/ruby and Ikuno-size correction — 2026-11-01
 
-The current separately staged candidate is `build/english-retained-review-fresh-20261101/`. Use its `EBOOT.elf` and its own `assets/data.sdat` as one pair; exact hashes and blank observations belong to `work/qa/english-retained-review-20261101-results-to-fill.json`. Do not substitute a previously installed archive or transfer earlier passes.
+The earlier retained-review candidate is `build/english-retained-review-fresh-20261101/`. Its `EBOOT.elf` and its own `assets/data.sdat` remain one preserved pair; exact hashes and observations belong to `work/qa/english-retained-review-20261101-results-to-fill.json`. It is not the glossary-corrected v0.4 replacement.
 
 This pair includes 4,754 additional editorial record edits from the retained findings, not an exhaustive whole-script review. Spot-check corrected names, source honorifics, fragment joins and dialogue in normal play. Preserve the earlier `build/english-text-review-fresh-20261101/` pair and its independent form.
 

@@ -1,5 +1,20 @@
 # Status — 2026-11-01
 
+## Post-v0.4 glossary name corrections — 2026-11-01
+
+- Corrected **4,633 `translated_text` records across 388 files** against the binding `glossary.md`. Normalized recurring spellings including Yuuji, Hanesaki, Ruuko, Silfa, Kouno, Kusugawa and Himeyuri; standardized source nicknames including Maaryan, Saaryan, Yocchi, Taka-ryan, San-chan, Takabou, Tama-ane and Tama-onee-chan; corrected literal full names to given-name-first order. Restored confirmed source-present honorifics.
+- Name matching treats native controls as opaque boundaries. Split-name repairs preserve the existing text items and source-owned fragments; all original text, lengths, metadata, suffixes, controls and private glyphs remain unchanged. Exact before/after values, reasons and current hashes are private at `work/qa/glossary-name-corrections-20261101/corrections.json`. Only `translated_text` changed in the scripts.
+- Preserved the intentional Aika/Manaka reading contrast, explicitly segmented Ma-Ryan wordplay and fake-passport reading. Preserved unrelated names/brands and deliberate parody names rather than applying fuzzy replacements. Four retained known-spelling candidates are individually attributed contextual exceptions; no ordinary unclassified candidates remain in the audited spelling families. This is a bounded glossary pass, **not whole-script bilingual completion**.
+- All **291 unit tests pass**, and the offline glossary consistency check passes. Actual `stage_english_build.py --verify-only --japanese-font --dialogue-scale 0.75` reconstruction verifies 183,446 text rows across 1,884 payloads, 115 choice companions and 877 untouched payloads. Its in-memory ELF SHA-256 is **`765770a465ad75629c10c383eee47ebc50da1db9a5437093aee9f712f09a95df`**; **no ELF/SDAT was written**. No new runtime/GPU/save acceptance is claimed.
+- These live-script corrections **postdate published v0.4**. Released artifacts, installer, diagnostic pair and GitHub release were not modified. Updated editorial resume hashes and the existing root handoff; detailed manual observations and production/completeness gates remain unchanged. No subagents or bulk model calls were used.
+
+## Conservative workspace cleanup — 2026-11-01
+
+- Removed **201 disposable generated files**, totaling **331,732,367 logical bytes (316.36 MiB)**: PyInstaller packages/bytecode/TOCs/library ZIPs from nine compiler trees, plus source/test Python bytecode. Removed 11 emptied bytecode directories. Retained all freezer recipes and all 18 compiler warning/cross-reference records at their existing paths.
+- Preserved translations, original ELF/baselines, references, QA/provenance, tooling inputs, all published packages and current/historical diagnostic pairs. No source reset, game deployment, save change or GitHub release modification was performed.
+- Post-cleanup SHA-256 checks match the original source ELF, current diagnostic ELF/SDAT, v0.4 installer and release ZIP. ZIP CRC validation passes; the retained frozen installer reports version 0.4 and `self-test OK`. Cleanup evidence and the exact removal list are private at `work/qa/workspace-cleanup-20261101-201453.json`.
+- Added the user-requested condensed root `HANDOFF.md`, covering the published v0.4 identities, completed corrections, evidence, cleanup boundaries, unresolved gates and deferred review. The handoff and cleanup status update remain local; no additional publication or rebuild was performed.
+
 ## Published v0.4 preview — 2026-11-01
 
 - Published GitHub prerelease **[`v0.4`](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.4)** at commit **`f7277519532520d77992f9481a6aa747904a7519`**, following the user's report “current build tested” and explicit publication request. This selects the existing `build/english-retained-review-fresh-20261101/` pair: ELF `53d1b3be…`, paired SDAT `646e64f9…`; no game reassembly or substitution occurred.

@@ -1,10 +1,10 @@
-# v0.4 preview — tested diagnostic and retained editorial corrections
+# v0.4 preview — glossary-corrected replacement
 
-This release packages the exact selected diagnostic from
-`build/english-retained-review-fresh-20261101/`. The user reports **“current build
-tested”** and requests its publication as v0.4. No per-case results, emulator
-version, scenes or screenshots accompanied that report. Full bilingual review,
-full-game runtime acceptance and the separate production gate remain incomplete.
+This release now packages the glossary-corrected diagnostic from
+`build/english-glossary-v04-fresh-20261101/`, replacing the original v0.4 asset.
+**This exact replacement pair has not been runtime-tested.** The user's earlier
+“current build tested” report applies only to the superseded `53d1b3be…` ELF pair,
+not this new build. Full bilingual review and production acceptance remain open.
 
 ## Changes
 
@@ -20,6 +20,10 @@ full-game runtime acceptance and the separate production gate remain incomplete.
   retained findings: fragment joins, source-bound names/honorifics, grammar,
   quotation boundaries and missing or misplaced meaning. This is not an exhaustive
   bilingual pass; unchanged/content-limited dispositions are not completeness credit.
+- Correct **4,633 additional name records across 388 files** against the binding
+  glossary: spellings, literal full-name order, nicknames and source honorifics.
+  Preserve native controls/fragments, interrupted names, deliberate name-reading
+  jokes and fake names. These edits can change scenario/checkpoint offsets.
 - Retain expanded base-game/AnotherDays/separate-story drafts, GenInterfaceJP
   Regular Japanese and Latin in all four native font atlases, auxiliary-font
   aliases and the existing English UI. Private icons remain intact.
@@ -28,8 +32,12 @@ full-game runtime acceptance and the separate production gate remain incomplete.
 
 | Selected diagnostic file | Bytes | SHA-256 |
 | --- | ---: | --- |
-| `EBOOT.elf` | 10,748,216 | `53d1b3be345915b2fe8c4e41cb7137e49add6923d21acf94f02f5aad0c406d54` |
-| `assets/data.sdat` | 2,202,627,776 | `646e64f96503060ffe17fdeba485b89d3554f6c6f6de66cc4c65e3ecc7a650ff` |
+| `EBOOT.elf` | 10,748,216 | `765770a465ad75629c10c383eee47ebc50da1db9a5437093aee9f712f09a95df` |
+| `assets/data.sdat` | 2,202,627,776 | `8de6fca3c00ece03a03fc4845572a22d2ea94771b71098e5ebf90cea6d07a85b` |
+
+This replaces the original v0.4 download under the **same filename and version**.
+If you downloaded v0.4 before this glossary replacement, download it again; the
+old package does not contain these name corrections.
 
 Complete game files are **not release assets**. The self-contained Windows
 installer carries an executable diff and source-bound archive replacement chunks.
@@ -50,12 +58,13 @@ are not accepted as original inputs.
 2. Download and extract **`th2dxp_en-v0.4-installer.zip`** from the GitHub v0.4
    release. Run **`th2dxp_patch_gui.exe`**; no Python or separate patch-data download
    is required.
-3. Select the game folder or `PS3_GAME/USRDIR`. When upgrading, use **Restore
-   original** before **Install**. Preserve `USRDIR/.th2dxp-backup`; a modified folder
-   without exact original backups requires a fresh dump.
-4. Start a **fresh New Game**. Changed scenario/checkpoint offsets make older
-   builds' execution-position saves unsafe. Preserve them and use new disposable
-   same-build slots only.
+3. Select the game folder or `PS3_GAME/USRDIR`. When upgrading **any earlier patch,
+   including the original v0.4**, use **Restore original** before **Install**.
+   Preserve `USRDIR/.th2dxp-backup`; a modified folder without exact original
+   backups requires a fresh dump.
+4. Start a **fresh New Game**. Even the superseded v0.4's execution-position saves
+   are not supported by this replacement. Preserve personal saves and use new
+   disposable same-build slots only.
 
 Allow about **7 GiB** free. The installer never starts RPCS3, downloads a game or
 edits saves. Do not replace `EBOOT.BIN` by hand or mix an ELF with another pair's
@@ -69,11 +78,11 @@ byte-identically. Output archive authentication and complete DAT decrypt equalit
 passed. Native contraction and encoded font-size-control replays passed; these are
 software/native proofs, not RSX/GPU rendering or full story execution.
 
-The user's general test confirmation does not fill the 24 general or four targeted
-manual observations. It does not establish route reachability, full-game memory
-fit, voice/page synchronization or cross-build save compatibility. Whole-script
-bilingual review remains deferred. This remains a **preview**, not a finished
-localization.
+No runtime test report exists for this replacement pair. The original v0.4's
+general confirmation does not transfer to it or fill the 24 general/four targeted
+manual observations. Route reachability, full-game memory fit, voice/page timing
+and cross-build save compatibility remain unverified. Whole-script bilingual
+review remains deferred. This is a **preview**, not a finished localization.
 
 ## Attribution and publication boundary
 
