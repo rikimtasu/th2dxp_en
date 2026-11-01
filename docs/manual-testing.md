@@ -2,6 +2,33 @@
 
 **Only the user launches RPCS3.** No command here starts it or edits its configuration. All generated files remain under `build/` until manually selected.
 
+## Contraction/ruby and Ikuno-size correction — 2026-11-01
+
+The current separately staged candidate is `build/english-retained-review-fresh-20261101/`. Use its `EBOOT.elf` and its own `assets/data.sdat` as one pair; exact hashes and blank observations belong to `work/qa/english-retained-review-20261101-results-to-fill.json`. Do not substitute a previously installed archive or transfer earlier passes.
+
+This pair includes 4,754 additional editorial record edits from the retained findings, not an exhaustive whole-script review. Spot-check corrected names, source honorifics, fragment joins and dialogue in normal play. Preserve the earlier `build/english-text-review-fresh-20261101/` pair and its independent form.
+
+The user subsequently reported “current build tested” and selected this exact pair for the v0.4 GitHub preview. This is a general test confirmation, not a substitute for the still-null 24 general and four targeted observations; no per-case results, version, scenes or screenshots were supplied. See `docs/release-v0.4.md` for the packaged release scope.
+
+Only the user launches RPCS3 and tests a disposable copy. Start fresh; lexical apostrophe canonicalization, zero-length ruby readings and editorial changes alter scenario/checkpoint offsets. Preserve personal saves and use a new disposable spare slot on this exact pair.
+
+- In the supplied `script_0967` street scene, check `It's`, `can't` and `that's` for normal internal spacing, and check the subsequent continuous quotation.
+- In Ikuno's story, compare ordinary text before/after a source `F10`/`F20` span: intentional half-size text may remain half-size, but returning to normal must restore the staged 75% scale rather than source 100%.
+- Check the `script_0966` unit47 hospital sentence for no stray reading row or missing join space. Check the emphasized base words in `0966:54` and `0999:517`: the words must remain complete without dot-ruby or added internal spaces.
+- Exercise advance/auto/skip, whole-record backlog scrolling/return, choices, story/date state and a disposable same-build save/reload. Record only actual observations and screenshots; encoded scanner/codec proofs are not GPU or runtime acceptance.
+
+## Full-translation Japanese-font diagnostic — 2026-10-30
+
+**2026-10-31 follow-up:** the user reported testing finished and selected this exact pair for the planned v0.3 release. Record that general report without requesting repeat tests merely to reconfirm it. Individual case results/version/scenes were not supplied, so the24-case form and separate production evidence remain unchanged. See `docs/release-v0.3.md` for the locally prepared package; no public release is claimed.
+
+The completed Japanese-font candidate is `build/english-geninterface-jp-20261030/`; `EBOOT.report.json` and `assets/report.json` record successful staging/authentication/decrypt equality. Its exact `EBOOT.elf` (**`0213e036…`**) and `assets/data.sdat` (**`d387124f…`**) form one pair; full hashes are in `docs/fonts.md` and the independent blank form `work/qa/geninterface-japanese-20261030-results-to-fill.json`. Do not use older Latin-only archives or transfer their runtime results. The33 differing `n/` entries belong to the separately validated source variant and remain unchanged. Source recovery's legacy metadata warning does not authenticate the original; the newly generated output passed complete authentication/decrypt proof without warnings.
+
+This candidate contains live translated scenarios, the69 targeted editorial corrections, GenInterfaceJP Japanese in all four fonts and75% normal-dialogue scale. It does **not** contain the old H01–H08 diagnostic paragraph or branch markers, so the historical marker procedures below are not a claim about this build. Formal production acceptance remains separate.
+
+Only the user places the matched files in a **disposable test copy** and launches RPCS3. Start a fresh New Game; changed scenario offsets make old execution-position saves unsafe. Preserve personal/corrupted saves and use only a new disposable spare slot on this exact build. At native720p inspect mixed Japanese/Latin, kana including dakuten/handakuten/small kana, kanji and Japanese punctuation; check name-entry auxiliary fonts, help/options/music and save captions as well as normal dialogue. Then exercise page/auto/skip, choices, story/date progression, full-record backlog scrolling/return and same-build spare-save reload. Record actual scene, emulator version, tester, exact pair hashes and screenshots; no observation is prefilled as a pass.
+
+## Retained Latin-only native acceptance target
+
 Current hashes/procedure: **`docs/pretranslation-gates.md`**. Use **`build/gen-latin-reload-probe/EBOOT.elf`** (`TH2_EN_GEN_LATIN_RELOAD.elf`) with **`build/gen-latin-reload-probe/assets/data.sdat`** and **`work/qa/gen-latin-reload-results-to-fill.json`**. ELFa15f4f08... requires new SDATbe72aa94...; never reuse a660c827/c4898391 with it. GenInterfaceJP replaces Latin letters/digits and six `()[]{}` aliases; other Japanese/punctuation/private glyphs stay intact. Check complete g/j/p/q/y in help/dialogue, whole words and every UI surface, plus separated Normal/Whole Page values, the Next button, map/footer weight and bracket/i-dot centering. Load save slots005/010 (or a fresh save on this exact build) and confirm reload no longer faults, then scroll within a tall backlog entry and close/reopen/resume unchanged gameplay. Preserve all failed pairs/forms, including66786e63 and62bdc049; do not repeat them. No offline/GPU equivalence or runtime acceptance is inferred.
 
 ## Inputs and outputs

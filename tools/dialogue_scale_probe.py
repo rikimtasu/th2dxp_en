@@ -91,6 +91,26 @@ def check_layout(source, old, new, previous, native, *, scale=0.85):
     if not 0 < widths[1] < widths[0] or abs(widths[1] / widths[0] - scale) > 0.02:
         raise ValueError(
             f"Dialogue measurement did not shrink to approximately {scale:.0%}: widths={widths}")
+    # The real handler makes F10 half-size and F20 source-normal, rather than
+    # restoring the constructor's patched scale. Check both axes and ensure
+    # the hook leaves a non-dialogue context at native source sizes.
+    tagged = b"A<F10>B<F20>C"
+    for normal in (True, False):
+        model = native_runtime_text_smoke.RuntimeCPU(
+            source, replay_image(new, source), native, tagged, bytes(32), 16,
+            width=984, height=628, scale=scale, dialogue=True)
+        if not normal:
+            model.put(model.ENGINE + 0x2B0, 0, 4)
+        model.write(model.TEXT, tagged + b"\0")
+        model.r[4] = model.TEXT
+        tagged_result = model.run()
+        for letter, source_factor in ((b"B", 0.5), (b"C", 1.0)):
+            matching = [span for span in tagged_result["spans"]
+                        if letter in bytes.fromhex(span["text_hex"])]
+            expected = source_factor * (scale if normal else 1.0)
+            if not matching or any(abs(span[axis] - expected) > 0.000001
+                                   for span in matching for axis in ("scale_x", "scale_y")):
+                raise ValueError(f"Font-size control mismatch for {letter!r}, normal={normal}")
     return {"source_page_count": results[0][1]["page_count"],
             "smaller_page_count": results[1][1]["page_count"],
             "sample_cursor_widths": widths, "scale": scale,

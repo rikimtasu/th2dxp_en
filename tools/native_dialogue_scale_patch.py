@@ -10,6 +10,8 @@ import project
 
 HOOK = 0x64004
 CONTINUE = 0x64008
+FONT_HOOK = 0x6D710
+FONT_CONTINUE = 0x6D718
 SCALE_BITS = 0x3F59999A  # nearest binary32 to the default 0.85
 
 
@@ -32,6 +34,12 @@ def apply(image, native, *, staged=None, scale=0.85):
         raise ValueError("Dialogue constructor return is not the expected source nop")
     if any(int(row["va"], 0) == HOOK for row in native["patches"]):
         raise ValueError("Dialogue constructor return is already patched")
+    font_off = FONT_HOOK - 0x10000
+    font_before = bytes.fromhex("d05f00a4d03f00a8")
+    if (source[font_off:font_off + 8] != font_before
+            or image[font_off:font_off + 8] != font_before
+            or any(int(row["va"], 0) == FONT_HOOK for row in native["patches"])):
+        raise ValueError("Font-size control stores differ from source")
     start = native["rx_extension"]["file_end"]
     if any(image[start:native_layout_patch.CAVE_END]) or any(source[start:native_layout_patch.CAVE_END]):
         raise ValueError("Dialogue scale needs the original empty RX tail")
@@ -63,13 +71,63 @@ def apply(image, native, *, staged=None, scale=0.85):
     code = bytes(asm.asm(body, addr=address)[0])
     branch = bytes(asm.asm(f"b {CONTINUE:#x}", addr=address + len(code))[0])
     code += branch
-    if len(branch) != 4 or start + len(code) > native_layout_patch.CAVE_END:
+    font_address = address + len(code)
+    # F controls specify absolute source sizes. Apply the same factor only to
+    # the live normal-dialogue context, not backlog or other text surfaces.
+    # The engine singleton owns the context at +0x2b0.
+    font_body = f"""
+        stdu 1,-0x50(1)
+        std 0,0x20(1)
+        std 11,0x28(1)
+        stfd 0,0x30(1)
+        mffs 0
+        stfd 0,0x48(1)
+        mfcr 0
+        std 0,0x38(1)
+        lis 11,0x65
+        lwz 11,0x2614(11)
+        cmpwi 11,0
+        beq original
+        lwz 11,0x2b0(11)
+        cmplw 11,31
+        bne original
+        lis 11,{scale_bits >> 16:#x}
+        ori 11,11,{scale_bits & 0xffff:#x}
+        stw 11,0x40(1)
+        lfs 0,0x40(1)
+        fmuls 0,2,0
+        stfs 0,0xa4(31)
+        lfs 0,0x40(1)
+        fmuls 0,1,0
+        stfs 0,0xa8(31)
+        b restored
+    original:
+        stfs 2,0xa4(31)
+        stfs 1,0xa8(31)
+    restored:
+        ld 0,0x38(1)
+        mtcrf 255,0
+        lfd 0,0x48(1)
+        mtfsf 255,0
+        lfd 0,0x30(1)
+        ld 11,0x28(1)
+        ld 0,0x20(1)
+        addi 1,1,0x50
+    """
+    font_code = bytes(asm.asm(font_body, addr=font_address)[0])
+    font_branch = bytes(asm.asm(f"b {FONT_CONTINUE:#x}", addr=font_address + len(font_code))[0])
+    code += font_code + font_branch
+    if len(branch) != 4 or len(font_branch) != 4 or start + len(code) > native_layout_patch.CAVE_END:
         raise ValueError("Dialogue scale helper exceeds RX padding")
     hook = bytes(asm.asm(f"b {address:#x}", addr=HOOK)[0])
     if len(hook) != 4:
         raise ValueError("Dialogue scale hook is not one instruction")
+    font_hook = bytes(asm.asm(f"b {font_address:#x}", addr=FONT_HOOK)[0])
+    if len(font_hook) != 4:
+        raise ValueError("Font-size control hook is not one instruction")
     result = bytearray(image)
     result[off:off + 4] = hook
+    result[font_off:font_off + 4] = font_hook
     result[start:start + len(code)] = code
     phoff = struct.unpack_from(">Q", image, 0x20)[0]
     filesz, memsz = struct.unpack_from(">QQ", image, phoff + 32)
@@ -86,9 +144,14 @@ def apply(image, native, *, staged=None, scale=0.85):
                               "source_before": source[off:off + 4].hex(),
                               "input_before": image[off:off + 4].hex(),
                               "after": hook.hex(), "purpose": purpose})
+    report["patches"].append({"va": hex(FONT_HOOK), "file_offset": hex(font_off),
+                              "source_before": source[font_off:font_off + 4].hex(),
+                              "input_before": image[font_off:font_off + 4].hex(),
+                              "after": font_hook.hex(), "purpose": "normal_dialogue_font_control_scale"})
     report["injected_blocks"].append({"name": purpose, "va": hex(address),
                                        "size": len(code), "sha256": project.digest(code)})
-    report["dialogue_scale"] = {"factor": scale, "scope": "normal dialogue constructor only",
+    report["dialogue_scale"] = {"factor": scale,
+                                "scope": "normal dialogue constructor and font-size controls",
                                 "tracking_changed": False, "runtime_accepted": False}
     report["output_sha256"] = project.digest(result)
     if not native_layout_patch.native_code_matches(result, result, report):

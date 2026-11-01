@@ -49,6 +49,8 @@ def main():
     allowed = set(range(phoff + 32, phoff + 48))
     allowed.update(range(native_dialogue_scale_patch.HOOK - 0x10000,
                          native_dialogue_scale_patch.HOOK - 0x10000 + 4))
+    allowed.update(range(native_dialogue_scale_patch.FONT_HOOK - 0x10000,
+                         native_dialogue_scale_patch.FONT_HOOK - 0x10000 + 4))
     allowed.update(range(start, end))
     if len(incoming) != len(candidate) or any(a != b and offset not in allowed
                                                for offset, (a, b) in enumerate(zip(incoming, candidate))):

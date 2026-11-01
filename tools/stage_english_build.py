@@ -26,9 +26,10 @@ a prior build's SDAT only after its archive, DAT round-trip and every current
 replacement hash match.
 
 Every changed scenario is re-read out of the assembled image and compared with
-``script/`` before anything is written, and the corrections are proven not to
-touch a single scenario payload, so a staged file cannot silently differ from
-the translation it claims to contain.
+the staged translation before anything is written. Lexical curly apostrophes in
+translated English are canonicalized to ASCII. Ruby readings become zero-length
+staged text records, retaining their control pairs and source files; the base
+text carries the English meaning. Neither transformation writes to ``script/``.
 
     python -X utf8 tools/stage_english_build.py --verify-only
     python -X utf8 tools/stage_english_build.py
@@ -74,6 +75,95 @@ FONT_TAG = re.compile(r'<G(\d)>')
 SPLIT_FONT_TAG = re.compile(r'^G(\d)$')
 INLINE_TAG = re.compile(r'<[^>]*>')
 BACKSLASH_ESCAPE = re.compile(r'\\.')
+
+# Consume the whole Unicode word chain first, so mixed Japanese/digit tokens
+# cannot backtrack into a smaller apparent English contraction.
+APOSTROPHE_WORD = re.compile(r"\w+(?:[‘’']\w+)+")
+LEXICAL_APOSTROPHE = re.compile(r"[A-Za-z]+(?:[‘’'][A-Za-z]+)+")
+
+
+def canonicalize_apostrophe_word(match):
+    text = match[0]
+    return text.replace("’", "'").replace("‘", "'") if LEXICAL_APOSTROPHE.fullmatch(text) else text
+
+
+def canonicalize_english_apostrophes(changed):
+    """Normalize translated lexical apostrophes in memory, never source/control text."""
+    counts = {"apostrophes": 0, "text_rows": 0, "scripts": 0}
+    for units in changed.values():
+        script_changed = False
+        in_tag = False
+        for unit in units:
+            for item in unit["items"]:
+                if item["kind"] != "text":
+                    continue
+                original = item["original_text"]
+                if original == "<":
+                    in_tag = True
+                    continue
+                if original == ">":
+                    in_tag = False
+                    continue
+                text = item["translated_text"]
+                if in_tag or text == original:
+                    continue
+                # Use the validator's control parser; each escape/tag is an
+                # opaque boundary, including substitution names and operands.
+                pieces = []
+                offset = 0
+                for control in project.engine_controls(text):
+                    start = text.index(control, offset)
+                    pieces.append(APOSTROPHE_WORD.sub(canonicalize_apostrophe_word, text[offset:start]))
+                    pieces.append(control)
+                    offset = start + len(control)
+                pieces.append(APOSTROPHE_WORD.sub(canonicalize_apostrophe_word, text[offset:]))
+                canonical = "".join(pieces)
+                if canonical == text:
+                    continue
+                if (project.engine_controls(canonical) != project.engine_controls(text) or
+                        canonical.encode("cp932", errors="strict").decode("cp932") != canonical):
+                    raise ValueError("Apostrophe canonicalization changed controls or CP932 text")
+                counts["apostrophes"] += sum(text.count(c) - canonical.count(c) for c in "‘’")
+                counts["text_rows"] += 1
+                script_changed = True
+                item["translated_text"] = canonical
+        counts["scripts"] += int(script_changed)
+    return counts
+
+
+def suppress_ruby(changed, meta):
+    """Empty split R...R0 readings in staged native literals, retaining controls."""
+    count = 0
+    for entry in meta["entries"]:
+        if not entry["text_count"]:
+            continue
+        name = entry["json_filename"]
+        units = changed.get(name)
+        if units is None:
+            units = project.load(project.SCRIPTS / name)
+        modified = False
+        for unit in units:
+            items = unit["items"]
+            for i, item in enumerate(items):
+                if item.get("kind") != "text" or not re.fullmatch(r"R[1-9][0-9]*", item["original_text"]):
+                    continue
+                if (i < 1 or i + 5 >= len(items) or
+                        [items[j].get("original_text") for j in (i - 1, i + 1, i + 3, i + 4, i + 5)] !=
+                        ["<", ">", "<", "R0", ">"]):
+                    raise ValueError(f"{name}: unexpected ruby control structure")
+                reading = items[i + 2]
+                text = reading.get("translated_text", "")
+                if (reading.get("kind") != "text" or not isinstance(text, str) or
+                        reading.get("control_suffix") or project.engine_controls(text) or
+                        any(ord(c) < 32 or 0xE000 <= ord(c) <= 0xF8FF for c in text)):
+                    raise ValueError(f"{name}: ruby reading contains controls or unsupported text")
+                if text != "":
+                    reading["translated_text"] = ""
+                    modified = True
+                count += 1
+        if modified:
+            changed[name] = units
+    return count
 
 
 def auxiliary_latin_codes(scripts, source, font):
@@ -317,6 +407,8 @@ def main(argv):
 
     source, kit, meta = project.source_bytes(), project.codec(), project.baseline()
     changed, stats = project.validate(project.SCRIPTS, meta, allow_growth=True)
+    ruby_readings = suppress_ruby(changed, meta)
+    apostrophes = canonicalize_english_apostrophes(changed)
     rebuilt, engine = production_engine.rebuild_image(source, changed, kit, meta)
     original_rows = scenario_source.scan(source, kit)
     proof = verify_image(rebuilt, changed, original_rows, kit)
@@ -378,6 +470,8 @@ def main(argv):
     summary = {"output_sha256": project.digest(image), "source_sha256": project.digest(source),
                "bytes": len(image), "translated_files": len(changed), "translated_rows": rows,
                "validation": stats, "proof": proof,
+               "suppressed_ruby_readings": ruby_readings,
+               "canonicalized_english_apostrophes": apostrophes,
                "font_tpl_sha256": project.digest(applied["font_tpl"]),
                "default_name": applied["name_proof"],
                 "punctuation": applied["punct_proof"],
@@ -410,6 +504,8 @@ def main(argv):
         "packing": "appended segment; original 64-byte allocations; native VWF/save preview",
         "translation": {"files": len(changed), "text_rows": rows},
         "rebuilt_image_proof": proof,
+        "suppressed_ruby_readings": ruby_readings,
+        "canonicalized_english_apostrophes": apostrophes,
         "engine": engine,
         "default_name": applied["name_manifest"],
         "punctuation": applied["punct_manifest"],
@@ -447,11 +543,15 @@ def main(argv):
             "Installing and running this build is a separate user step; nothing was deployed.",
             "Latin letters/digits, six bracket aliases and 23 ASCII punctuation aliases are redrawn; "
             "the default player name is 'Kouno Takaaki' (short form 'Taka').",
+            "Lexical curly apostrophes in translated English are staged as ASCII; source scripts, "
+            "quotation marks and controls are retained. Text length changes require fresh same-build checkpoints.",
+            "Ruby readings are staged as zero-length literals with their native R controls retained; "
+            "semantic glosses, emphasis and required joins remain in the reviewed base wording.",
         ],
     }
     if scale_report is not None:
         report["notes"].append(
-            "Normal dialogue alone is scaled to 75%; backlog and UI text are not scaled. "
+            f"Normal dialogue alone is scaled to {args.dialogue_scale:.0%}; backlog and UI text are not scaled. "
             "The scale replay is offline evidence, not runtime acceptance.")
     if args.japanese_font:
         with (output / 'GenInterfaceJP-OFL.txt').open('xb') as license_file:

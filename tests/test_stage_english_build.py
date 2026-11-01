@@ -17,7 +17,7 @@ def record(text, suffix=""):
 
 
 def payload(code):
-    return b"VE" + struct.pack("<I", len(code)) + struct.pack("<I", 0) + b"\0" * 8 + code
+    return b"VE\0\0" + struct.pack("<III", len(code), 0, 0) + code
 
 
 def units_of(data, kit):
@@ -82,6 +82,109 @@ class PayloadProofTests(unittest.TestCase):
         view.append({"end_reason": "eof", "items": [dict(view[0]["items"][0])]})
         with self.assertRaisesRegex(ValueError, "items for"):
             stage.expect_items("script_0000.json", self.data, view, self.kit)
+
+
+
+class ApostropheCanonicalizationTests(unittest.TestCase):
+    @staticmethod
+    def item(text, original="翻訳", suffix=""):
+        return {"kind": "text", "original_text": original,
+                "translated_text": text, "control_suffix": suffix}
+
+    def test_lexical_only_with_quotation_and_japanese_boundaries(self):
+        text = "It’s can’t that‘s O’Brien rock’n’roll ‘It’s’ ‘word’ ’ 日本’語 日a’a本 1a’a a’a1"
+        item = self.item(text, suffix=r"\k")
+        changed = {"a.json": [{"items": [item]}]}
+        counts = stage.canonicalize_english_apostrophes(changed)
+        self.assertEqual(item["translated_text"],
+                         "It's can't that's O'Brien rock'n'roll ‘It's’ ‘word’ ’ 日本’語 日a’a本 1a’a a’a1")
+        self.assertEqual(counts, {"apostrophes": 7, "text_rows": 1, "scripts": 1})
+        self.assertEqual(item["original_text"], "翻訳")
+        self.assertEqual(item["control_suffix"], r"\k")
+        self.assertEqual(stage.canonicalize_english_apostrophes(changed),
+                         {"apostrophes": 0, "text_rows": 0, "scripts": 0})
+
+    def test_controls_private_glyphs_and_untranslated_source_are_opaque(self):
+        text = r"\p1234It’s\kcan’t<It’s>*nf1that’s" + "\ue001"
+        items = [self.item(text), self.item("source’s", original="source’s"),
+                 self.item("<", original="<"), self.item("control’s", original="control’s"),
+                 self.item(">", original=">"), self.item("after’s"),
+                 {"kind": "opcode_gap", "bytes": "020820"}]
+        changed = {"a.json": [{"items": items}]}
+        counts = stage.canonicalize_english_apostrophes(changed)
+        self.assertEqual(items[0]["translated_text"],
+                         r"\p1234It's\kcan't<It’s>*nf1that's" + "\ue001")
+        self.assertEqual(project.engine_controls(items[0]["translated_text"]),
+                         project.engine_controls(text))
+        self.assertEqual(items[1]["translated_text"], "source’s")
+        self.assertEqual(items[3]["translated_text"], "control’s")
+        self.assertEqual(items[5]["translated_text"], "after's")
+        self.assertEqual(counts, {"apostrophes": 4, "text_rows": 2, "scripts": 1})
+
+    def test_mixed_word_chains_are_not_partially_normalized(self):
+        text = "日rock’n’roll rock’n’roll日 a’b’1 1’a’b _a’b a’b_"
+        item = self.item(text)
+        self.assertEqual(stage.canonicalize_english_apostrophes({"a": [{"items": [item]}]}),
+                         {"apostrophes": 0, "text_rows": 0, "scripts": 0})
+        self.assertEqual(item["translated_text"], text)
+
+    def test_rebuilt_comparison_uses_canonical_staged_text(self):
+        kit = project.codec()
+        data = payload(record("source", r"\k"))
+        units = units_of(data, kit)
+        text_item = next(item for unit in units for item in unit["items"] if item["kind"] == "text")
+        text_item["translated_text"] = "It’s"
+        changed = {"a.json": units}
+        stage.canonicalize_english_apostrophes(changed)
+        self.assertEqual(stage.expect_items("a.json", payload(record("It's", r"\k")), units, kit), 1)
+        with self.assertRaisesRegex(ValueError, "text differs"):
+            stage.expect_items("a.json", payload(record("It’s", r"\k")), units, kit)
+
+class RubySuppressionTests(unittest.TestCase):
+    @staticmethod
+    def items(*texts):
+        return [{"kind": "text", "original_text": text,
+                 "translated_text": text, "control_suffix": ""} for text in texts]
+
+    def test_suppresses_only_readings_in_changed_and_unchanged_scripts(self):
+        first = self.items("Before", "<", "R32", ">", "reading", "<", "R0", ">", "base")
+        second = self.items("<", "R11", ">", "・", "<", "R0", ">", "word")
+        changed = {"a.json": [{"items": first}]}
+        source = [{"items": second}]
+        meta = {"entries": [{"json_filename": "a.json", "text_count": 1},
+                            {"json_filename": "b.json", "text_count": 1}]}
+        with patch.object(project, "load", return_value=source):
+            self.assertEqual(stage.suppress_ruby(changed, meta), 2)
+        self.assertEqual(first[4]["translated_text"], "")
+        self.assertEqual(second[3]["translated_text"], "")
+        self.assertEqual(first[8]["translated_text"], "base")
+        self.assertEqual([first[i]["translated_text"] for i in (1, 2, 3, 5, 6, 7)],
+                         ["<", "R32", ">", "<", "R0", ">"])
+        self.assertEqual(first[4]["original_text"], "reading")
+        self.assertIn("b.json", changed)
+
+    def test_zero_length_reading_roundtrips_without_losing_following_text(self):
+        kit = project.codec()
+        texts = ("AB", "<", "R32", ">", "reading", "<", "R0", ">", "CD")
+        original = payload(b"".join(record(text) for text in texts))
+        units = units_of(original, kit)
+        changed = {"a.json": units}
+        meta = {"entries": [{"json_filename": "a.json", "text_count": len(texts)}]}
+        stage.suppress_ruby(changed, meta)
+        rebuilt = kit.rebuild_scenario_from_structured_json(
+            original, units, encoding="cp932", font_table=None, allow_growth=True)
+        actual = [item["original_text"] for unit in units_of(rebuilt, kit)
+                  for item in unit["items"] if item["kind"] == "text"]
+        self.assertEqual(actual, ["AB", "<", "R32", ">", "", "<", "R0", ">", "CD"])
+        self.assertEqual(len(original) - len(rebuilt), len("reading"))
+
+    def test_rejects_malformed_or_control_bearing_reading(self):
+        meta = {"entries": [{"json_filename": "a.json", "text_count": 1}]}
+        for texts in (("<", "R32", ">", "word", "<", "R1", ">"),
+                      ("<", "R32", ">", r"word\k", "<", "R0", ">")):
+            changed = {"a.json": [{"items": self.items(*texts)}]}
+            with self.subTest(texts=texts), self.assertRaises(ValueError):
+                stage.suppress_ruby(changed, meta)
 
 
 class JapaneseArchiveInputsTests(unittest.TestCase):

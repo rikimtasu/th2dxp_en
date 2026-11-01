@@ -2,17 +2,17 @@
 
 Unofficial English localization of **ToHeart2 DX PLUS** (PS3, `BLJM60381`).
 
-The English installer is a **preview, not a finished patch**. **v0.3** includes
-expanded translation drafts, Japanese/Latin GenInterfaceJP and 75% dialogue size.
-Its exact build has not been runtime-tested, and bilingual review is incomplete.
-The earlier v0.2 payload received limited player testing; those results do not
-establish acceptance of v0.3. Project tools never launch an emulator or touch saves.
-See [`docs/release-v0.3.md`](docs/release-v0.3.md) for scope and limitations.
+The English installer is a **preview, not a finished patch**. **v0.4** packages
+the current player-tested diagnostic pair, with contraction spacing, English ruby
+and Ikuno text-size corrections plus retained editorial fixes. The user reports
+testing this exact pair; no detailed case results were supplied. Full bilingual,
+save and route review remains incomplete. Project tools never launch an emulator
+or touch saves. See [`docs/release-v0.4.md`](docs/release-v0.4.md).
 
 ## Install (players)
 
-1. Download `th2dxp_en-v0.3-installer.zip` from
-   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.3), unpack it
+1. Download `th2dxp_en-v0.4-installer.zip` from
+   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.4), unpack it
    and run `th2dxp_patch_gui.exe` — Windows, no Python.
 2. Point it at the folder holding `PS3_GAME/USRDIR`.
 3. If upgrading an older patch, press **Restore original** first, then **Install**.
@@ -67,16 +67,16 @@ extracted Japanese, built ELF/SDAT or saves are tracked or published.
 
 ## Status
 
-- **Translated:** 885 base-game scenarios, 102,062 text items, the
-  Latin/punctuation font atlas and the English default name `Kouno Takaaki`.
-- **v0.2:** 1,928 text-item corrections across 311 files, including 457 spacing
-  fixes, plus 85% normal-dialogue size without changing character tracking.
-- **Observed:** the player reports the combined build looks good; screenshots show
-  corrected spacing/name spelling and readable text in the shown opening/classroom scenes.
-- **Still unverified:** full-game rendering/pagination, voice timing, save compatibility
-  and route reachability. The older template's manual form is not repinned or filled
-  from these limited observations.
-- **Not started:** AnotherDays.
+- **v0.4:** contraction spacing, zero-length English ruby readings, normal-dialogue
+  font-size-control corrections and 4,754 additional editorial record edits across
+  124 files. Retains GenInterfaceJP Japanese/Latin and 75% normal-dialogue size.
+- **Draft scope:** base-game, AnotherDays and separately owned story drafts are
+  present. Draft insertion and reconstruction counts are not completeness review.
+- **Observed:** the user reports testing the exact v0.4 diagnostic pair. No
+  per-case results, emulator version, scenes or screenshots accompanied that report.
+- **Still unverified:** full-game rendering/pagination, voice timing, cross-build
+  save compatibility and route reachability. The detailed manual form remains
+  unfilled; exhaustive bilingual review remains deferred.
 - `tools/project.py check` fails closed here on purpose: shipped lines exceed the
   original Japanese slots, and the growth path stays gated on manual acceptance.
 - Offline proofs (hashes, round-trips, synthetic tests) say the files are
