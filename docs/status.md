@@ -1,5 +1,14 @@
 # Status — 2026-11-01
 
+## Published v0.4 preview — 2026-11-01
+
+- Published GitHub prerelease **[`v0.4`](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.4)** at commit **`f7277519532520d77992f9481a6aa747904a7519`**, following the user's report “current build tested” and explicit publication request. This selects the existing `build/english-retained-review-fresh-20261101/` pair: ELF `53d1b3be…`, paired SDAT `646e64f9…`; no game reassembly or substitution occurred.
+- Uploaded patch-only **`th2dxp_en-v0.4-installer.zip`**, **37,930,929 bytes**, SHA-256 **`e18835b9c214d52e6bb7a682a7fc2d9a5b01447792a079d327663984786e375d`**. GitHub's uploaded-asset digest matches the local audited ZIP, and the public release is confirmed non-draft. Older releases and local packages remain preserved.
+- All **291 tests pass**. Both source-specific archive recipes reconstruct their pinned DAT identities; all 17 frozen payload files match the verified patch folder, and the frozen executable's embedded patch code reconstructs the selected ELF exactly. Frozen `--version` reports 0.4, `--self-test` passes, the final visible GUI was inspected with isolated settings and no installation action, and ZIP CRC/content/allowlist checks pass.
+- The user supplied a general test confirmation, not per-case observations, scenes, emulator version or screenshots. All 24 general and four targeted manual observations remain null; full bilingual review, whole-game runtime/save/route acceptance and the production gate remain incomplete. Changes to scenario/checkpoint offsets still require fresh same-build execution-position saves.
+- Updated the installer version/copy, root README, release guide, manual-testing notes and provenance notices. Public scope and upgrade instructions are in `docs/release-v0.4.md`; private packaging, GUI and GitHub identity evidence is at `work/qa/release-v04-20261101/package-proof.json`. Publication retains the user's earlier permission confirmation and reference attribution, without independent rights verification.
+- No complete ELF/DAT/SDAT, extracted script, reference or save was uploaded as a release asset. No emulator was launched, no install/restore action was invoked, and installed game files and saves were not modified.
+
 ## Retained-findings continuation completed — 2026-11-01
 
 - Adjudicated the remaining **4,886 retained suggestions and 24 uncertainty flags inline**, with no new subagents or model calls. Applied **4,754 additional `translated_text` edits across 124 files**, including required fragment separators, source-bound names/honorifics, grammatical repairs, quotation boundaries and missing or misplaced meaning. Rejected style-only/unsafe proposals and retained content-limited passages unchanged. Exact edits and dispositions are private at `work/qa/continued-review-20261101/retained-inline-corrections.json` and `retained-adjudication.json`; the resume queue now has no pending retained suggestions.
