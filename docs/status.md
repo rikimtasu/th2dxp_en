@@ -1,6 +1,6 @@
 # Status — 2026-11-03
 
-## v0.5 pair and patch-only package verified — 2026-11-03
+## v0.5 published — script corrections and three UI fixes — 2026-11-03
 
 - The user approved all three UI fixes, then explicitly requested **v0.5 on GitHub with the previously applied script fixes included**. Built from the current live scripts, not the older released ELF. Corpus review remains stopped; no new translation edits were made during this UI task.
 - Compound punctuation now uses GenInterfaceJP for U+E000 (`!?`), U+E001 (`!!`) and U+E00E (`??`): six selected cells across main/font2/font3 and three main metric pairs. Codepoints/controls and all other private/unselected packed bits are preserved. Actual cells and neighboring retained controls were inspected.
@@ -11,7 +11,7 @@
 - **303 unit tests pass.** Patch-only data has17 files/14 chunks; actual consumer reconstruction passes for both pinned original archive variants. The frozen installer contains all17 verified payload files and both exact helpers; its embedded code reconstructs the selected ELF exactly. Frozen version0.5/self-test and the visible installer window pass with isolated settings, no selected game and no install/restore action.
 - Verified local package: `release/v0.5/th2dxp_en-v0.5-installer.zip`,37,819,930 bytes, SHA-256 **`d8d3b12a3bf0e2f493c5960089c05b6401916d023958760214fa8661232e74fe`**. Installer: `dist/v0.5/th2dxp_patch_gui.exe`,38,083,873 bytes, SHA-256 **`70b098dd83b513221ee1d2a1f681dc3e4dd248b99f5e3e2cd40958fe18491c97`**. ZIP CRC, six-file allowlist and content/source equality pass; no complete game files/scripts/references/saves are packaged.
 - Exact-build manual form: `work/qa/ui-rendering-fixes-20261102-results-to-fill.json`; all24 general/eight targeted fields remain null. No GPU/game/save/full-review/production acceptance is inferred. No emulator, deployment, installed-reference edit or save change.
-- Evidence: `work/qa/ui-rendering-fixes-20261102/` and `work/qa/release-v05-20261103/`. GitHub publication is authorized and pending; retain v0.4 and all earlier evidence.
+- **Published:** https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.5, non-draft preview prerelease. GitHub's sole asset digest/size match the verified ZIP. New tag `v0.5` identifies source commit `e7645b0af9e9005c7a44fcb3d2a6e74e81f33a46`; v0.4's target and asset identities remain unchanged. Evidence: `work/qa/ui-rendering-fixes-20261102/` and `work/qa/release-v05-20261103/`. Root `HANDOFF.md` records the exact pair/package and remaining manual limits.
 
 ## Three UI issues investigated offline — 2026-11-02
 
