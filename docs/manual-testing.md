@@ -2,6 +2,12 @@
 
 **Only the user launches RPCS3.** No command here starts it or edits its configuration. All generated files remain under `build/` until manually selected.
 
+## v0.5 UI/script-fix pair
+
+New pair: `build/ui-rendering-fixes-20261102/EBOOT.elf` (`cd2bc463…`) with its own `assets/data.sdat` (`25753e92…`). It includes the previous live translation-script fixes and all three targeted rendering changes. Exact full hashes and blank observations are in `work/qa/ui-rendering-fixes-20261102-results-to-fill.json`:24 general/eight targeted fields, all unobserved. See `release-v0.5.md`; v0.4 and its evidence remain historical.
+
+Only the user tests a disposable copy and launches RPCS3. Upgrade through **Restore original → Install**, start a fresh New Game, preserve personal saves/backups and use new disposable same-build slots. Inspect compound `!?`/`!!`/`??` beside standalone marks and unrelated private icons; read long map labels/apostrophes during reveal and when stationary; inspect music titles/themes/credit roles/artists through locked, selected and scrolled rows with no panel/scrollbar overlap. Continue existing control/backlog/same-build save checks, recording only actual observations. Encoded pixel/geometry proofs do not establish final GPU sampling, full-game execution or compatibility with older saves.
+
 ## v0.4 glossary-corrected replacement — 2026-11-01
 
 Current pair: `build/english-glossary-v04-fresh-20261101/EBOOT.elf` and its own `assets/data.sdat`. Exact identities and blank observations are in `work/qa/english-glossary-v04-20261101-results-to-fill.json`. This includes 4,633 additional glossary-name corrections across 388 files and supersedes the original v0.4 package, not its retained evidence.

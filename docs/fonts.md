@@ -1,5 +1,15 @@
 # Fonts and graphics text
 
+## Compound punctuation, map rasters and music bounds — 2026-11-02
+
+The user approved the three targeted rendering corrections. `tools/native_compound_punct_patch.py` overlays exactly U+E000/F040 (`!?`), U+E001/F041 (`!!`) and U+E00E/F04E (`??`) after the established Latin/punctuation/Japanese layers. Complete GenInterfaceJP masks share Latin baseline37, component ink-width+6 spacing and one final native4-bit quantization; the compound keeps a transparent border without scaling/clipping. Main native metrics match actual quantized ink. Codepoints, lookups, controls and every other private/unselected packed bit remain unchanged. The base generators' preservation proofs are layer-relative, not a claim that these three approved cells remain original in the final font.
+
+Map labels now use `ui_graphics.MapFace`, reusing the existing whole-word layout but drawing from the approved face directly at the final UI em with8-bit coverage and same-face punctuation. No native4-bit-mask intermediate, dilation or downsampling. Fresh retained inputs are under `work/ui/ui-rendering-fixes-20261102/`; `ui_probe.graphics_inputs()` rejects old raster provenance or mismatched wording/geometry/hashes. All135 labels fit their source170×52 cells; all five source record headers/other payloads and the five non-map UI TPLs remain byte-identical. Native-size atlas/long-label previews were inspected. This does not prove native GPU filtering or map reveal appearance.
+
+The music correction migrates the row panel, selected-row extent and scrollbar together; titles, role bindings, font sizes and vertical spacing are retained. The encoded replay executes all51 complete records plus settled/fractional scroll and selected/locked cases, checking real title/theme/artist calls and complete role rectangles against the actual panel and scrollbar. `stage_english_build.py` freshly assembles current native UI code rather than copying stale geometry from the retained template. A genuine small UI image is replayed; code/data/main-metric correspondence binds it to the final scenario-growth image without truncation or bypassing the fixture's address-overlap guard. GPU submissions/tessellation and input-driven transitions remain manual.
+
+Actual compound glyphs/retained controls and packed-map proofs are under `work/qa/ui-rendering-fixes-20261102/`. New diagnostic staging targets `build/ui-rendering-fixes-20261102/`; published v0.4 and all earlier evidence remain unchanged. No rendering, save or production acceptance transfers.
+
 ## Recovered original assets
 
 `python -X utf8 tools/assets.py prepare` decrypts the user's installed `data.sdat` into ignored `work/assets/data.dat`, using pinned standalone `VelocityRa/make_npdata` (Hykem, GPL-3.0). It does not run RPCS3, require a game-specific key for this SDAT, or change the installation. The wrapper requires upstream integrity/decryption completion messages, exact NPD-declared length, source hash preservation and a valid DAT index before promoting the output.
@@ -27,7 +37,7 @@ User runtime screenshots now prove uppercase A–Z, lowercase a–z, digits 0–
 
 **Earlier probes failed**, but user screenshots support the targeted VWF correction: complete F01–F16, clear F02/F08 flowers and legible F09/F11 Japanese continuations. The capacity build shows the complete English sentence across two lines, then following Japanese; the user reports spare-save loading worked. Yellow English text is backlog. The old fixed-advance save caption overflow is now corrected in **`build/save-preview-probe/EBOOT.elf`**: the user's `16_56_54` DataLoad screenshot shows proportional Latin spacing and the excerpt/ellipsis inside slot005, with Japanese rows legible. Original fonts, dialogue and serialized saves are unchanged. This accepts the shown preview, not arbitrary captions or all other windows. No repeat or rebuild is needed; see [`pretranslation-gates.md`](pretranslation-gates.md) for remaining checks.
 
-**Original font inputs remain immutable; the user later approved a staged GenInterfaceJP Latin cutover.** The initial VWF correction retained every glyph. After source sampling failed to establish an additional g geometry defect, the user explicitly selected GenInterfaceJP for Latin letters/digits. This permits generated Latin pixels/metrics, not installed-file edits or replacement of Japanese/punctuation/private glyphs. Preserve CP932 semantics; the incompatible PC font patch remains irrelevant.
+**Original font inputs remain immutable; the user later approved a staged GenInterfaceJP Latin cutover.** The initial VWF correction retained every glyph. After source sampling failed to establish an additional g geometry defect, the user explicitly selected GenInterfaceJP for Latin letters/digits. That initial authorization excluded Japanese/punctuation/private glyphs; later punctuation work and the explicit Japanese request below supersede those respective exclusions. Installed-file edits and private-icon replacement remain unauthorized. Preserve CP932 semantics; the incompatible PC font patch remains irrelevant.
 
 ## Original glyph measurement
 
@@ -119,9 +129,53 @@ The exact offline stage passes for `build/gen-latin-reload-probe/`:a15f4f08... E
 
 The paired `data.sdat` must be repacked whenever these pixels change: `build/english-v0.1/assets/data.sdat` (`bbb932bf…`) carries font TPL `fa17b5ad…`, and neither `c4898391…` nor `a660c827…` nor the `be72aa94…` diagnostic archive may be paired with this ELF.
 
+## Approved Japanese extension — 2026-10-30
+
+The user requested Japanese replacement with the same **GenInterfaceJP Regular** face. `tools/native_japanese_font_patch.py` chains onto the retained Latin/punctuation atlas and generates **7,261 replacement cells**: main font6,915; font1=134; font2=22; font3=190. Every selected kana/CJK/Japanese-punctuation character has actual Unicode cmap coverage, not a .notdef fallback. Existing Latin/punctuation cells, private icons, other symbols, native indices and every unselected packed bit are preserved. Original assets remain immutable.
+
+- Rasterization keeps47px em but uses one Japanese origin **X=1, baseline40**, not Latin baseline37, which clips dakuten and many kanji. Full raster bounds must fit inside the48px cell with a1px transparent border; no per-character scaling/cropping/placement adjustment. The same placement is used in all four fonts. Main-font bearing/ink-width pairs match the new quantized ink at all6,915 selected sites.
+- Native banks follow **R,G,B,A**: packed `(byte, shift)` = `(0,0), (1,4), (1,0), (0,4)`, with eight banks in the main atlas. TPL records are20 bytes and store **height before width**, important for the rectangular auxiliary atlases. The native auxiliary constructor receives its real source table-byte length, not zero.
+- Preserve caller-specific advances, not a global metric substitution: scanner/dialogue Japanese use48 design units; save captions and raw options keep fallback46 and existing special-cell behavior. Proportional name help uses the new Japanese ink width with native+2 spacing; its extra+4 Latin tracking applies only to ASCII. Music keeps its+2 protocol. Thus proportional Japanese UI widths can change while fixed-cell geometry remains unchanged.
+
+Private outputs: `work/ui/geninterface-japanese-20261030/` contains four generated TPLs, `font-manifest.json`, the OFL notice, `offline-proof.json`, `geometry-proof.json` and the inspected `native-mixed-preview.png`. Encoded replay passed **16 bank-selection cases**, four mixed-text sampled consumers (help/options/music/dialogue), **three bounded caption comparisons**, **nine unchanged scanner/wrap/control/progress comparisons** (including all four font selections), and three caller-specific mixed UI advance comparisons. Identical NaNs in inactive vector trace lanes required serialized trace comparison; no game code was altered to make that comparison pass. The font-only replay input is retained v0.3 (`cc9708fc…`), producing in-memory candidate `44a0b0bb…`; it does not include the69 later translation corrections.
+
+Full live-script assembly also passes `python -X utf8 tools/stage_english_build.py --verify-only --japanese-font --dialogue-scale 0.75`:183,446 text rows /1,884 scenario payloads checked, candidate ELF **`0213e0367a456a775376b3a3cdf5b1f9e9dd307d54072ed2224e36c78929577c`** (10,758,904 bytes), main font TPL **`178d36458f1b23a252c788a7cc38255a47f89659550010d5cc38387dbbf61331`**. This command writes no build files. All267 synthetic tests and `git diff --check` pass.
+
+**The initial missing-original blocker now has separately authorized variant support.** The recorded original backup is absent; its SDAT identity remains **`4509a4e93e7e630e09971326d3e5f78e4c48a05e588e8c1ab9f0a88b174a9e3a`**. The supplied QA backup instead hashes to **`389bf3cabdb9cdf3044b5be1dd4789c43be351f24bfa70a22e0d2e2fca5aa0f1`**, paired only with DAT **`324d93e49a620c3b2d0dab8451aba0106ce2b36762d4ecd42287d5ca8dc230c7`**. `ui_archive.py` recognizes this additional exact pair without editing the earlier provenance. Source recovery happens under the new build directory. Comparison covers all3,516 entries:3,483 identical,33 differing `n/8000.bin`–`n/8200.bin` entries retained from the variant. All UI/font source entries match the original assets. Unknown hashes, mismatched decrypted DATs, unexpected entry differences and replacement of variant-specific entries fail closed.
+
+Source recovery permits only the two exact known legacy header/metadata warnings and **does not authenticate the source**; the completed recovery reported only the metadata warning. The generated output passed strict warning-free authentication and complete decrypt/DAT equality. The earlier archives cannot carry the changed Japanese pixels. Completed staging command (output is retained; use a different new directory for future changed artifacts):
+
+```console
+python -X utf8 tools/stage_english_build.py --output build/english-geninterface-jp-20261030 --japanese-font --dialogue-scale 0.75 --source-sdat "work/installer-fresh-qa/game/PS3_GAME/USRDIR/.th2dxp-backup/data.sdat"
+```
+
+Completed pair:
+
+| File under `build/english-geninterface-jp-20261030/` | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `EBOOT.elf` / identical `EBOOT_EN.elf` | 10,758,904 | `0213e0367a456a775376b3a3cdf5b1f9e9dd307d54072ed2224e36c78929577c` |
+| `assets/data.sdat` | 2,202,589,216 | `d387124f55517ba8873c430c5f6bed081ec62d8ed9b650e3bb542d7e3260b352` |
+
+All14 replacements re-extract exactly;3,502 other table rows and all source bytes outside the14 authorized rows remain intact. Complete decrypt matches the2,200,440,056-byte DAT (`ecde4fbf…`); header/metadata/every-block authentication passes. Both ELF copies and SDAT were independently hashed after staging; the OFL notice is present. This pair includes the69 targeted translation corrections and75% normal-dialogue scale. All275 unit tests pass.
+
+On2026-10-31 the user reported testing finished and selected this pair for the **planned v0.3** release. `work/qa/geninterface-japanese-20261030-results-to-fill.json` retains24 unfilled checks because no individual case outcomes/version/scenes accompanied that general report. Do not request repeats merely to reconfirm the reported testing. See `docs/release-v0.3.md` for local patch-only packaging. No comprehensive RSX/live-game acceptance, save compatibility, production enablement or public release is inferred; retained pairs and forms remain unchanged.
+
+## Auxiliary-font Latin aliases — 2026-10-31
+
+The three small atlases are not only Japanese. `G1` selects `font1.tpl` for story/letter text, `G2` `font2.tpl` (name card, exchange diary) and `G3` `font3.tpl` (food labels, letter body). Each carries its own ordered CP932 range list; ASCII resolves through the global alias table to a full-width code, and a code missing from that font's list returns glyph index 0 — a blank cell. English inside any `G2`/`G3` span therefore rendered as nothing, the same failure that blanked the `font1` intro.
+
+`tools/native_auxiliary_latin_patch.py` now handles all three fonts through one `FONTS` spec. For each it appends the missing alias cells after every native cell, rewrites the font's lookup-allocation word (`0x24702C`/`0x247030`/`0x247034`), and installs a 108-byte helper at that constructor's return (`0x118D4`/`0x11968`/`0x119FC`) which copies the appended range pairs after the native ones and points `0x7c(3)` at owned ink metrics. Caller GPRs, CR and CTR are preserved, and every unselected packed bit, native index and advance is unchanged.
+
+| Font | Native cells | Bank capacity | Appended aliases | Ranges | Lookup bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `font1.tpl` | 137 | 256 | 94 | 18 | 1,248 |
+| `font2.tpl` | 27 | 128 | 93 | 16 | 352 |
+| `font3.tpl` | 203 | 256 | 46 | 13 | 1,736 |
+
+Each lookup allocation is enlarged from the native range-table byte count before the hook appends its ranges. The `0x100` argument at `0x1D43C` does not establish lookup-allocation capacity; the texture-bank capacity is checked separately. Fonts 1 and 2 hold the complete 93-alias set, but font3 cannot (203 + 93 > 256), so `stage_english_build.py` derives the exact alias codes its `G3` spans draw from the scripts being built and passes them as a subset — complete for that build by construction, and an overflow raises instead of blanking. Offline replay of every `G2`/`G3` run in the current scripts (`work/qa/ikuno-text-20261031/scan_spans.py`) resolves **22 runs with 0 blank characters**; this is model replay, not RSX output.
+
 ## English default player name — 2026-10-27
 
 The game's default protagonist name lived in one 40-byte read-only window (`0xF73D8..0xF7400`, VA `0x1073D8`): `貴明` / `たかあき` (given name and reading), `河野` / `こうの` (family name and reading), `たか` / `タカ` (short and katakana nickname). `tools/native_default_name_patch.py` repacks those six null-terminated strings in place as `Takaaki`/`Takaaki`/`Kouno`/`Kouno`/`Taka`/`Taka` — 38 of the 40 bytes — and repoints the **32** inventoried load sites by rewriting only the low 16-bit immediate of their `lis rX,0x10` + `addic/addi rY,rX,0x73xx` pair. The 12 `ori rZ,rY,0` inventory entries copy an already-loaded register and need no change. 63 bytes differ in the whole executable.
 
 The initialisation path copies with fixed `strncpy` lengths (13 bytes for each of the five 16-byte fields, 32 for the nickname), and those lengths are read back out of the executable's own `li r5,n` instructions, so a future longer name is rejected rather than silently truncated. A save that still holds the Japanese default simply compares unequal at `0x8631C`/`0x8AB58` and reads as a custom name — the same path a player-typed name takes, with no save migration and no new gameplay. `verify()` re-reads the window, both kana/kanji slots and every repointed instruction, and the completeness scan refuses to run if any materialised window address is missing from the inventory or any inventory immediate is not a real `addic/addi`. 17 synthetic tests.
-

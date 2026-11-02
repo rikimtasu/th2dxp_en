@@ -3,7 +3,6 @@ from pathlib import Path
 import struct
 import sys
 import unittest
-import tempfile
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
@@ -187,30 +186,31 @@ class RubySuppressionTests(unittest.TestCase):
                 stage.suppress_ruby(changed, meta)
 
 
-class JapaneseArchiveInputsTests(unittest.TestCase):
-    def test_explicit_original_is_forwarded_with_all_four_font_replacements(self):
-        import ui_archive
-        import ui_probe
-        with tempfile.TemporaryDirectory() as temporary:
-            source = Path(temporary) / 'original.sdat'
-            source.write_bytes(b'read-only synthetic original')
-            graphics = {'latin_font': {'output_tpl_sha256': 'latin', 'source_tpl_sha256': 'source'}}
-            replacements = {'_initial/font.tpl': b'jp0', '_initial/font1.tpl': b'jp1',
-                            '_initial/font2.tpl': b'jp2', '_initial/font3.tpl': b'jp3'}
-            applied = {'punct_manifest': {'base_output_tpl_sha256': 'latin', 'base_tpl_sha256': 'source',
-                                          'output_tpl_sha256': 'punct'},
-                       'font_tpl': b'jp0',
-                       'japanese_manifest': {'base_punctuation_tpl_sha256': 'punct'},
-                       'japanese_replacements': replacements}
-            with patch.object(ui_probe, 'graphics_inputs', return_value=({}, graphics)):
-                with patch.object(ui_archive, 'stage', return_value={'verified': True}) as pack:
-                    result, actual_graphics = stage.stage_archive(Path(temporary) / 'out', applied,
-                                                                   source_sdat=source)
-            self.assertEqual(result, {'verified': True})
-            self.assertIs(actual_graphics, graphics)
-            pack.assert_called_once_with(replacements, Path(temporary) / 'out/assets', source_sdat=source)
-            self.assertEqual(source.read_bytes(), b'read-only synthetic original')
+class UIReplayCorrespondenceTests(unittest.TestCase):
+    def setUp(self):
+        self.image = bytes(stage.geninterface_latin.ALIAS_OFFSET + 95 * 2)
+        self.native = {
+            "ui_strings": {"file_offset": 80, "file_size": 20},
+            "rx_extension": {"file_begin": 100, "file_end": 140},
+            "patches": [{"file_offset": "0x14", "after": "00000000"}],
+            "data_patches": [{"file_offset": "0x28", "after": "00000000"}],
+        }
 
+    def test_final_metrics_and_replayed_ui_must_match_even_when_scenarios_grow(self):
+        stage.verify_ui_replay(self.image + b"scenario arena", self.image, self.native)
+        for offset in (20, 40, 80, 100, stage.geninterface_latin.METRICS_OFFSET,
+                       stage.geninterface_latin.ALIAS_OFFSET):
+            final = bytearray(self.image)
+            final[offset] = 1
+            with self.subTest(offset=offset), self.assertRaisesRegex(ValueError, "differs from UI replay"):
+                stage.verify_ui_replay(bytes(final), self.image, self.native)
+
+    def test_missing_final_font_mapping_is_not_a_correspondence_pass(self):
+        with self.assertRaisesRegex(ValueError, "differs from UI replay"):
+            stage.verify_ui_replay(self.image[:1000], self.image, self.native)
+
+
+class JapaneseArchiveInputsTests(unittest.TestCase):
     def test_foreign_japanese_base_is_not_staged(self):
         import ui_archive
         import ui_probe

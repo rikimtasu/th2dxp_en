@@ -1,4 +1,4 @@
-"""Asset-free native UI format/encoding and complete-copy boundaries."""
+"""Asset-free native UI encoding, complete-copy and consumer geometry boundaries."""
 import copy
 from pathlib import Path
 import struct
@@ -8,6 +8,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import native_layout_patch
 import native_ui_patch
+import native_ui_smoke
 import project
 
 
@@ -130,6 +131,67 @@ class NativeCopyGuardTests(unittest.TestCase):
                 self.assertFalse(native_layout_patch.native_code_matches(staged, staged, invalid))
         del report["ui_strings"]
         self.assertFalse(native_layout_patch.native_code_matches(staged, staged, report))
+
+
+class MusicPanelGeometryTests(unittest.TestCase):
+    def setUp(self):
+        self.panel = [254, 200, 1250, 254]
+        self.bar = [1258, 1274]
+        self.content = [
+            {"bounds": [343, 210, 744, 234], "next_column": 752},
+            {"bounds": [580, 234, 704, 251], "next_column": 752},
+            {"bounds": [752, 205, 848, 249]},
+            {"bounds": [853, 205, 992, 222], "next_column": 1000, "column_left": 852},
+            {"bounds": [853, 227, 992, 244], "next_column": 1000, "column_left": 852},
+            {"bounds": [1000, 205, 1096, 249]},
+            {"bounds": [1101, 205, 1242, 222], "next_column": 1250, "column_left": 1100},
+            {"bounds": [1101, 227, 1242, 244], "next_column": 1250, "column_left": 1100},
+        ]
+
+    def test_complete_roles_and_both_artist_lines_fit_exact_clearances(self):
+        native_ui_smoke.music_content_bounds(
+            self.panel, self.bar, self.content, selection=self.panel[:])
+
+    def test_old_scrollbar_collides_with_retained_complete_role_bank(self):
+        # The old bar crosses Composer/Arranger at 1043..1059; keeping
+        # artists within 1280 alone would miss this consumer-visible defect.
+        with self.assertRaisesRegex(ValueError, "scrollbar"):
+            native_ui_smoke.music_content_bounds(self.panel, [1043, 1059], self.content)
+
+    def test_panel_and_selection_must_migrate_together(self):
+        with self.assertRaisesRegex(ValueError, "row panel"):
+            native_ui_smoke.music_content_bounds([254, 200, 1026, 254], self.bar, self.content)
+        with self.assertRaisesRegex(ValueError, "selection"):
+            native_ui_smoke.music_content_bounds(
+                self.panel, self.bar, self.content, selection=[254, 200, 1026, 254])
+
+    def test_one_pixel_past_column_or_panel_clearance_is_rejected(self):
+        for index in (0, 3, 4, 6, 7):
+            content = copy.deepcopy(self.content)
+            content[index]["bounds"][2] += 1
+            with self.subTest(content=index), self.assertRaisesRegex(ValueError, "column|panel edge"):
+                native_ui_smoke.music_content_bounds(self.panel, self.bar, content)
+
+    def test_artist_ink_cannot_cross_back_into_either_role_bank(self):
+        for index in (3, 4, 6, 7):
+            content = copy.deepcopy(self.content)
+            content[index]["bounds"][0] = content[index]["column_left"] - 1
+            with self.subTest(content=index), self.assertRaisesRegex(ValueError, "role label"):
+                native_ui_smoke.music_content_bounds(self.panel, self.bar, content)
+
+    def test_real_second_artist_y_cannot_cross_row_bottom(self):
+        content = copy.deepcopy(self.content)
+        content[-1]["bounds"][3] = 255
+        with self.assertRaisesRegex(ValueError, "row panel"):
+            native_ui_smoke.music_content_bounds(self.panel, self.bar, content)
+
+    def test_scrollbar_and_panel_cannot_escape_or_lose_the_eight_pixel_gap(self):
+        for bar in ([1257, 1273], [1258, 1281]):
+            with self.subTest(bar=bar), self.assertRaisesRegex(ValueError, "scrollbar"):
+                native_ui_smoke.music_content_bounds(self.panel, bar, self.content)
+        with self.assertRaisesRegex(ValueError, "viewport"):
+            native_ui_smoke.music_content_bounds([254, 667, 1250, 721], self.bar, [])
+        native_ui_smoke.music_content_bounds([254, 666, 1250, 720], self.bar, [])
 
 
 if __name__ == "__main__":

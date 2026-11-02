@@ -1,5 +1,35 @@
 # Decisions
 
+## 2026-11-03 — Publish the UI/script-fix pair as v0.5
+
+The user explicitly requests that the new ELF/SDAT include the previously applied live translation-script fixes and be released directly as **v0.5 on GitHub**. Select the already rebuilt `build/ui-rendering-fixes-20261102/` pair, whose reconstruction proof checks the current script tree. Publish a separately named patch-only Windows installer/ZIP and a new v0.5 tag/release; do not replace v0.4 or any historical pair, package or evidence.
+
+Carry both supported original archive recipes and their distinct native entries, the existing licenses/reference attribution and the user's earlier permission confirmation. No new permission document or independent rights verification is claimed. This explicit publication approval supersedes the previous task's no-publication boundary, not the no-emulator/deployment/save rules.
+
+The selected pair has offline pixel/native/archive/installer proofs only. Keep it a preview prerelease, leave all exact-build manual observations null and production acceptance unchanged, and disclose incomplete/stopped bilingual review and fresh same-build save requirements. Earlier player reports do not transfer.
+
+## 2026-11-02 — Apply the three targeted rendering fixes
+
+The user explicitly requests applying all three investigated fixes. Permit a narrow private-punctuation pixel exception for U+E000/F040 (`!?`), U+E001/F041 (`!!`) and U+E00E/F04E (`??`): compose the approved GenInterfaceJP marks at the established Latin baseline, retain native codepoints and controls, bind quantized ink to native metrics, and preserve every other private/unselected packed bit. This supersedes private-pixel preservation only for these three identified compounds.
+
+Regenerate the map-label textures with the same approved face and punctuation at final UI em with full grayscale coverage. Retain complete wording, uniform proportions, whole-word wrapping and source-bound170×52 cells; no shortening, squeezing or speculative GPU-filter compensation. Move the music row panel, selected-row width and scrollbar together, retaining complete titles/credits, native role bindings, font sizes and vertical geometry.
+
+Stage separately from the published v0.4 pair and retain the original source archive, old outputs and evidence. Fresh native UI assembly must include current geometry rather than silently copying the older retained template. Encoded/pixel/archive proofs are offline diagnostics, not runtime/manual/production acceptance. No release replacement, installer publication, emulator, deployment or save changes are authorized.
+
+## 2026-11-02 — Important fixes only; bounded whole-script checks
+
+The user stopped exhaustive corpus reviews, then requested a quick check of the whole translation script for important issues. Use whole-tree structural/high-signal scans and inspect flagged Japanese/context; correct demonstrated corruption, wrong source-fragment ownership and required text boundaries. Do not restart scene-by-scene review, worker fan-out, bulk style/honorific edits or reference import.
+
+Distinguish targeted defect decisions from contextual/full-script bilingual approval. Preserve all source assets, controls, private glyphs, item boundaries and prior evidence. Offline reconstruction is not runtime acceptance and does not authorize a new published pair, installer or deployment.
+
+## 2026-11-02 — Resume complete bilingual review inline, without subagents
+
+The user requests complete Japanese/English review and explicitly prohibits summoning subagents to save usage. This supersedes the earlier whole-corpus deferral. Work inline against the current Japanese, English, binding glossary and neighboring scene context; do not restart the model fan-out or disguise delegated model calls as inline review.
+
+Keep exact source/target hashes and per-record decisions. Distinguish contextual review, targeted corrections, structural/encoding checks and UI-wording comparison from formal completeness or runtime acceptance. Unread records and content-limited passages remain explicitly unresolved; partial work must not be called complete. Preserve original inputs, native fragments, controls, private glyphs and all historical evidence.
+
+The review request does not authorize replacing the published v0.4 pair or installer, uploading another release, deploying files, launching an emulator or changing saves. Changed live scripts require separately authorized new paired staging before distribution.
+
 ## 2026-11-01 — Replace v0.4 with the glossary-corrected pair
 
 The user explicitly requests a newly written ELF/SDAT pair from the corrected live scripts and replacement of **v0.4 both locally and on GitHub**. Stage separately at `build/english-glossary-v04-fresh-20261101/`; preserve the superseded diagnostic pair and archive the original local v0.4 package/executable before switching the canonical local paths. Retain both supported original archive variants and patch-only publication.

@@ -38,23 +38,28 @@ text carries the English meaning. Neither transformation writes to ``script/``.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 from pathlib import Path
 import re
 import shutil
 import sys
+import tempfile
 
 import choice_text
 import dialogue_scale_probe
 import geninterface_latin
 import native_auxiliary_latin_patch
+import native_compound_punct_patch
 import native_default_name_patch
 import native_dialogue_scale_patch
 import native_latin_punct_patch
 import native_japanese_font_patch
+import native_ui_smoke
 import production_engine
 import project
 import scenario_source
+import ui_probe
 
 OUTPUT = project.ROOT / "build/english-v0.1"
 ELF_NAME = "EBOOT.elf"
@@ -271,9 +276,32 @@ def verify_image(rebuilt, changed, original_rows, kit):
             "untouched_payloads_identical": untouched,
             "choice_files": sum(1 for name in changed if name.endswith("_choices.json"))}
 
+def verify_ui_replay(image, replay, native):
+    """Bind the bounded UI replay to the final image without truncating either."""
+    ui = native["ui_strings"]
+    spans = [
+        ("UI strings", ui["file_offset"], ui["file_offset"] + ui["file_size"]),
+        ("UI/helper RX prefix", native["rx_extension"]["file_begin"], native["rx_extension"]["file_end"]),
+        ("main glyph metrics", geninterface_latin.METRICS_OFFSET,
+         geninterface_latin.METRICS_OFFSET + native_japanese_font_patch.SPECS[0][2] * 2),
+        ("ASCII aliases", geninterface_latin.ALIAS_OFFSET, geninterface_latin.ALIAS_OFFSET + 95 * 2),
+    ]
+    for patch in native["patches"] + native.get("data_patches", []):
+        start = int(patch["file_offset"], 0)
+        spans.append(("native patch", start, start + len(bytes.fromhex(patch["after"]))))
+    for name, start, end in spans:
+        if not 0 <= start < end <= min(len(image), len(replay)) or image[start:end] != replay[start:end]:
+            raise ValueError(f"Final image differs from UI replay: {name} at {start:#x}")
+    return {"replayed_image_sha256": project.digest(replay),
+            "final_image_sha256": project.digest(image),
+            "compared_spans": len(spans), "main_metric_pairs": native_japanese_font_patch.SPECS[0][2],
+            "scope": "native UI code/data and main-font metrics; scenario growth is not replayed",
+            "runtime_accepted": False}
+
+
 
 def corrections(source, rebuilt, *, japanese_font=False):
-    """Add punctuation/default names and optionally the Japanese font extension.
+    """Add names, Latin/compound punctuation and optional Japanese font cells.
 
     Each step binds the immutable source and verifies its generated output.
     """
@@ -288,10 +316,18 @@ def corrections(source, rebuilt, *, japanese_font=False):
         image = native_japanese_font_patch.apply(image, japanese, source=source)
         japanese_proof = native_japanese_font_patch.verify(source, image, japanese_replacements, japanese)
         font_tpl = japanese_replacements['_initial/font.tpl']
+    incoming = japanese_replacements if japanese_font else {"_initial/font.tpl": font_tpl}
+    compound_replacements, compound = native_compound_punct_patch.substitute(source, incoming)
+    image = native_compound_punct_patch.apply(image, compound, source=source)
+    compound_proof = native_compound_punct_patch.verify(source, image, compound_replacements, compound)
+    font_tpl = compound_replacements["_initial/font.tpl"]
+    if japanese_font:
+        japanese_replacements = compound_replacements
     return {"image": image, "font_tpl": font_tpl, "name_manifest": names,
             "name_proof": names_proof, "punct_manifest": punct, "punct_proof": punct_proof,
             "japanese_manifest": japanese, "japanese_proof": japanese_proof,
-            "japanese_replacements": japanese_replacements}
+            "japanese_replacements": japanese_replacements,
+            "compound_manifest": compound, "compound_proof": compound_proof}
 
 
 def stage_archive(output, applied, *, reuse=None, source_sdat=None):
@@ -409,7 +445,17 @@ def main(argv):
     changed, stats = project.validate(project.SCRIPTS, meta, allow_growth=True)
     ruby_readings = suppress_ruby(changed, meta)
     apostrophes = canonicalize_english_apostrophes(changed)
-    rebuilt, engine = production_engine.rebuild_image(source, changed, kit, meta)
+    template, template_report = ui_probe.assemble(source, kit, meta)
+    native = template_report["native_layout"]
+    # Copy current source-guarded UI corrections, not the older retained UI geometry.
+    # The temporary template is diagnostic only; production/manual pins stay unchanged.
+    with tempfile.TemporaryDirectory(prefix=".english-ui-", dir=project.ROOT / "build") as temporary:
+        template_path = Path(temporary) / ELF_NAME
+        template_path.write_bytes(template)
+        project.save(template_path.parent / "manifest.json", template_report)
+        rebuilt, engine = production_engine.rebuild_image(
+            source, changed, kit, meta, template_path=template_path,
+            template_sha256=template_report["output_sha256"])
     original_rows = scenario_source.scan(source, kit)
     proof = verify_image(rebuilt, changed, original_rows, kit)
 
@@ -422,11 +468,7 @@ def main(argv):
         raise ValueError("Default-name/punctuation corrections changed a scenario payload")
     scale_report = None
     layout_replay = None
-    native = None
     if args.dialogue_scale is not None:
-        template_path = project.ROOT / "build/gen-latin-reload-probe/EBOOT.elf"
-        native = project.load(template_path.parent / "manifest.json")["native_layout"]
-        template = template_path.read_bytes()
         image, scale_report = native_dialogue_scale_patch.apply(
             image, native, staged=template, scale=args.dialogue_scale)
         dialogue_scale_probe.check_hook(source, image, scale_report)
@@ -440,12 +482,19 @@ def main(argv):
         if len(before) != 1884 or before != after:
             raise ValueError("Dialogue-scale patch changed a scenario payload")
 
+    # Replay the genuine small UI template with the final main metrics. The full
+    # translated scenario arena overlaps the CPU fixture's synthetic objects.
+    replay_image = corrections(source, template, japanese_font=args.japanese_font)["image"]
+    if args.dialogue_scale is not None:
+        replay_image, _ = native_dialogue_scale_patch.apply(
+            replay_image, native, staged=template, scale=args.dialogue_scale)
+    replay_native = copy.deepcopy(scale_report if scale_report is not None else native)
+    ui_geometry = native_ui_smoke.geometry_smoke(source, replay_image, replay_native)
+
     story_font_latin, story_font_latin_proof = {}, {}
     if args.japanese_font:
         # The auxiliary atlases carry no ASCII cells in the source; without
         # appended aliases their English records compose to blank index0.
-        if native is None:
-            native = project.load(project.ROOT / "build/gen-latin-reload-probe/manifest.json")["native_layout"]
         tail = scale_report if scale_report is not None else native
         for font in (1, 2, 3):
             name = native_auxiliary_latin_patch.FONTS[font]["tpl"]
@@ -463,6 +512,7 @@ def main(argv):
                     (entry.json_filename, payload) for entry, payload, _, _ in
                     scenario_source.scan(applied["image"], kit)]:
                 raise ValueError(f"{name} Latin aliases changed a scenario payload")
+    ui_geometry["final_image_correspondence"] = verify_ui_replay(image, replay_image, replay_native)
 
 
     rows = sum(1 for units in changed.values() for unit in units
@@ -476,6 +526,10 @@ def main(argv):
                "default_name": applied["name_proof"],
                 "punctuation": applied["punct_proof"],
                 "japanese_font": applied["japanese_proof"],
+               "compound_punctuation": applied["compound_proof"],
+               "ui_geometry": {"complete_native_rows": ui_geometry["complete_native_rows"],
+                               "panel_cases": len(ui_geometry["native_music_panel_cases"]),
+                               "final_image_correspondence": ui_geometry["final_image_correspondence"]},
                "story_font_latin": story_font_latin_proof,
                "dialogue_scale": None if scale_report is None else scale_report["dialogue_scale"],
                "dialogue_scale_replay": layout_replay}
@@ -514,11 +568,14 @@ def main(argv):
         "japanese_font_proof": applied["japanese_proof"],
         "story_font_latin": story_font_latin,
         "story_font_latin_proof": story_font_latin_proof,
+        "compound_punctuation": applied["compound_manifest"],
+        "compound_punctuation_proof": applied["compound_proof"],
+        "ui_geometry": ui_geometry,
         "font_tpl_sha256": project.digest(applied["font_tpl"]),
         "dialogue_scale": summary["dialogue_scale"],
         "dialogue_scale_replay": layout_replay,
         "dialogue_scale_native_report": scale_report,
-        "ui_graphics": {"source_report": "work/ui/gen-latin-reload-graphics/graphics-report.json",
+        "ui_graphics": {"source_report": (ui_probe.GRAPHICS / "graphics-report.json").relative_to(project.ROOT).as_posix(),
                         "manifest_sha256": graphics["manifest_sha256"],
                         "label_instances": len(graphics["labels"]),
                         "assets": len(graphics["replacement_hashes"]) + (4 if args.japanese_font else 1)},
@@ -558,12 +615,18 @@ def main(argv):
             license_file.write(geninterface_latin.OFL.read_bytes())
         report['notes'].append(
             'Japanese kana, CJK and Japanese punctuation use GenInterfaceJP Regular in all four fonts. '
-            'Latin/punctuation aliases, private icons and native fixed-cell Japanese advances remain unchanged. '
+            'Latin/punctuation aliases, all private icons except the three approved compound-punctuation cells, '
+            'and native fixed-cell Japanese advances remain unchanged. '
             'Changed pixels require this newly rebuilt paired archive and fresh manual acceptance.')
         report['notes'].append(
             'Story font1 gains the same Latin letters/digits, quotes and punctuation aliases; its137 source '
             'Japanese/private cells, ordered lookup and fixed48 advances are unchanged. This is what makes '
             'English story records compose visible glyphs instead of blank cells.')
+    report["notes"].append(
+        "Private compound punctuation E000 (!?), E001 (!!) and E00E (??) now uses the approved Gen face. "
+        "Map labels use direct final-em grayscale coverage; music panel/selection/scrollbar geometry moves together. "
+        "The fresh diagnostic has no runtime acceptance and does not replace the published release.")
+    project.save(output / "native-ui-geometry-smoke.json", ui_geometry)
     project.save(output / REPORT_NAME, report)
     summary.update(written=True, elf=str(output / INSTALL_NAME),
                    report=str(output / REPORT_NAME),

@@ -35,6 +35,20 @@ OPTION_SELECTOR_SOURCE = {
     0x8FC00: "33a30018",
 }
 
+# The complete right-hand role/artist column outgrew the Japanese row panel.
+# Migrate its panel, selected-row extent and scrollbar as one source-bound unit;
+# titles, credit bindings and all vertical/font geometry remain native.
+MUSIC_PANEL_GEOMETRY = {
+    "panel_left": 254, "panel_right": 1250, "selection_width": 996,
+    "scrollbar_origin": 1260, "scrollbar_envelope": [1258, 1274],
+    "viewport_width": 1280, "minimum_clearance": 8,
+}
+MUSIC_PANEL_SOURCE = {
+    0x9BDE0: "38c00402",  # li r6,1026: row panel right
+    0x9C290: "38c00304",  # li r6,772: selected-row width
+    0x9C2D8: "38800415",  # li r4,1045: scrollbar origin
+}
+
 
 def encode_text(original, translated, encoding):
     """Keep native printf arguments and strict source-consumer encoding."""
@@ -341,11 +355,26 @@ def apply(image, native):
         credit_sites.append((pc, f"li 4,{groups[1]['artist_x'] + shadow}"))
     for pc, text in credit_sites:
         patch_site(pc, "ui_readable_music_credits", instruction(text, pc))
+    panel_sites = (
+        (0x9BDE0, f"li 6,{MUSIC_PANEL_GEOMETRY['panel_right']}"),
+        (0x9C290, f"li 6,{MUSIC_PANEL_GEOMETRY['selection_width']}"),
+        (0x9C2D8, f"li 4,{MUSIC_PANEL_GEOMETRY['scrollbar_origin']}"),
+    )
+    for pc, text in panel_sites:
+        if source[pc - 0x10000:pc - 0x10000 + 4].hex() != MUSIC_PANEL_SOURCE[pc]:
+            raise ValueError("Music panel/selection/scrollbar differs from reviewed immutable source")
+        patch_site(pc, "ui_music_panel_selection_scrollbar", instruction(text, pc))
     report["ui_graphic_layout"] = {"graphics_manifest_sha256": project.digest(graphics_manifest.read_bytes()),
                                     "legend_table_file_offset": table, "legend_entries": entries,
                                     "credit_groups": groups, "credit_instruction_sites": [hex(pc) for pc, _ in credit_sites],
                                     "music_title_font_pixels": 24, "music_credit_font_preset": "existing F27=0.35",
                                     "music_row_height": 60, "music_theme_y_offset": 34,
+                                    "music_panel_geometry": dict(
+                                        MUSIC_PANEL_GEOMETRY,
+                                        source_instruction_sites=[
+                                            {"va": hex(pc), "source_before": MUSIC_PANEL_SOURCE[pc],
+                                             "replacement": text} for pc, text in panel_sites],
+                                        vertical_geometry_unchanged=True),
                                     "font_assets_unchanged": True, "runtime_accepted": False}
     end = start + len(helpers)
     if end > native_layout_patch.CAVE_END or address + len(strings) >= 0x80000000:

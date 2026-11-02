@@ -5,7 +5,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import ui_graphics
@@ -22,8 +22,40 @@ def atlas():
     font.glyphs["-"] = dash, 36
     return font
 
+def map_face():
+    """Exercise raster/layout with Pillow's bundled face, not private game assets."""
+    font = ui_graphics.MapFace.__new__(ui_graphics.MapFace)
+    font.fonts = {em: ImageFont.load_default(size=em) for em in range(14, 25)}
+    return font
+
 
 class ReadableGraphicTests(unittest.TestCase):
+    def test_map_raster_is_direct_face_coverage_including_punctuation(self):
+        font = map_face()
+        for text in ("Konomi's", "Girls'", "Road-1"):
+            actual = font.line(text, 24, 170)
+            reference = font.fonts[24].getmask(text, mode="L")
+            expected = Image.frombytes("L", reference.size, bytes(reference))
+            expected = expected.crop(expected.getbbox())
+            self.assertEqual(actual.size, expected.size)
+            self.assertEqual(actual.tobytes(), expected.tobytes())
+            self.assertTrue(any(value % 17 for value in actual.tobytes()))
+
+    def test_map_complete_words_fit_source_cells_or_fail_at_floor(self):
+        font = map_face()
+        for text in ("Konomi's Middle School", "Terajo Girls' School",
+                     "Student Council Room", "Monjayaki Restaurant"):
+            result = font.mask(text, (170, 52), height=24)
+            layout = result.info["ui_layout"]
+            self.assertEqual(" ".join(layout["lines"]), text)
+            self.assertGreaterEqual(layout["font_pixels"], 14)
+            self.assertFalse(layout["horizontal_compression"])
+            self.assertEqual(result.size, (170, 52))
+        with self.assertRaises(ValueError):
+            font.mask("Unbreakable" * 30, (170, 52), height=24)
+        with self.assertRaises(ValueError):
+            font.mask("One Two Three Four Five Six", (20, 10), height=24)
+
     def test_words_wrap_without_condensation_or_fragments(self):
         result = atlas().mask("ONE TWO", (100, 80), height=24, weight=1, minimum=14)
         self.assertEqual(result.info["ui_layout"]["lines"], ["ONE", "TWO"])
@@ -119,10 +151,6 @@ class ReadableGraphicTests(unittest.TestCase):
             self.assertGreaterEqual(top, 57)
             self.assertLessEqual(right, 190)
             self.assertLessEqual(bottom, 78)
-        # Perspective, source cells, and nominal map/footer font sizes remain
-        # native; readability is improved through the selected stroke policy.
-        self.assertTrue(all(label["height"] == 24 for label in labels if label["id"].startswith("map.")))
-        self.assertTrue(all(label["height"] == 20 for label in labels if label["id"].startswith("general.legend.")))
 
 
 if __name__ == "__main__":

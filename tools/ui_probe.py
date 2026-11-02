@@ -32,7 +32,7 @@ import ui_graphics
 
 INPUT = project.ROOT / "build/typography-probe/EBOOT.elf"
 INPUT_SHA256 = "ce9da83e005d999e33966e45d449ac04d574cec867219fbb5176873826bb0f4c"
-GRAPHICS = project.ROOT / "work/ui/gen-latin-reload-graphics"
+GRAPHICS = project.ROOT / "work/ui/ui-rendering-fixes-20261102"
 OUTPUT = project.ROOT / "build/gen-latin-reload-probe"
 FORM = project.ROOT / "work/qa/gen-latin-reload-results-to-fill.json"
 FAILED = project.ROOT / "build/gen-latin-backlog-probe"
@@ -93,6 +93,20 @@ def graphics_inputs():
     report = project.load(GRAPHICS / "graphics-report.json")
     if report["manifest_sha256"] != project.digest(ui_graphics.MANIFEST.read_bytes()):
         raise ValueError("Final readable graphics do not identify the current bilingual/native layout manifest")
+    if report.get("map_raster") != ui_graphics.map_raster_provenance():
+        raise ValueError("UI map raster report is stale or uses an unapproved face/method")
+    current = {row["id"]: row for row in ui_graphics.editorial_labels()}
+    rows = report["labels"]
+    if len(rows) != len(current) or {row["id"] for row in rows} != set(current):
+        raise ValueError("UI raster report does not contain every current label exactly once")
+    for row in rows:
+        expected_label = current[row["id"]]
+        if any(row.get(key) != expected_label[key] for key in ("asset", "record", "rect", "english")):
+            raise ValueError("UI raster report retains stale label geometry or wording")
+        if row["id"].startswith("map."):
+            layout = row["rendered_layout"]
+            if layout.get("raster_method") != report["map_raster"]["method"] or layout.get("stroke_filter") != 1:
+                raise ValueError("UI map label was not directly rasterized in Regular")
     expected = {row["asset"] for row in ui_graphics.editorial_labels()}
     if set(report["replacement_hashes"]) != expected:
         raise ValueError("UI graphics omit a current asset or include a non-UI/font replacement")

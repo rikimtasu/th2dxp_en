@@ -19,9 +19,10 @@ import struct
 import sys
 import tempfile
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, __version__ as PILLOW_VERSION
 
 import project
+import geninterface_latin
 from native_layout_smoke import SourceMetrics
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -196,6 +197,53 @@ class LatinAtlas:
                                          "horizontal_compression": False, "rotated": False}
             return result
         raise ValueError(f"Readable complete UI text needs a larger native cell: {text!r}, {size}")
+
+
+def map_raster_provenance():
+    """Bind the map-only direct raster path to immutable face/license inputs."""
+    for path, expected in ((geninterface_latin.FONT, geninterface_latin.FONT_SHA256),
+                           (geninterface_latin.OFL, geninterface_latin.OFL_SHA256)):
+        if digest(path.read_bytes()) != expected:
+            raise ValueError("Map font/license provenance changed")
+    return {"face": "Gen Interface JP Regular",
+            "font_sha256": geninterface_latin.FONT_SHA256,
+            "ofl_sha256": geninterface_latin.OFL_SHA256,
+            "method": "direct-final-em-grayscale8-v1",
+            "pillow_version": PILLOW_VERSION,
+            "coverage_bits": 8, "resize": False, "native_atlas": False,
+            "punctuation": "same selected face; no native atlas fallback"}
+
+
+class MapFace(LatinAtlas):
+    """Reuse native-cell wrapping, but rasterize complete lines at final UI em."""
+    default_weight = 1
+
+    def __init__(self):
+        self.provenance = map_raster_provenance()
+        self.font_bytes = geninterface_latin.FONT.read_bytes()
+        self.fonts = {}
+
+    def line(self, text, height, max_width, *, weight=None):
+        if not text or any(not 0x20 <= ord(char) < 0x7F for char in text):
+            raise ValueError(f"Not printable Latin map text: {text!r}")
+        if weight not in (None, 1):
+            raise ValueError("Direct map text must retain the selected Regular stroke")
+        if height not in self.fonts:
+            self.fonts[height] = ImageFont.truetype(
+                io.BytesIO(self.font_bytes), height, layout_engine=ImageFont.Layout.BASIC)
+        face = self.fonts[height]
+        bounds = face.getbbox(text)
+        if bounds is None or bounds[2] <= bounds[0] or bounds[3] <= bounds[1]:
+            raise ValueError("Whitespace-only graphic translation")
+        image = Image.new("L", (bounds[2] - bounds[0], bounds[3] - bounds[1]))
+        ImageDraw.Draw(image).text((-bounds[0], -bounds[1]), text, font=face, fill=255)
+        box = image.getbbox()
+        if box is None:
+            raise ValueError("Whitespace-only graphic translation")
+        image = image.crop(box)
+        if image.width > max_width:
+            raise ValueError(f"Uncompressed UI text exceeds its cell: {text!r}")
+        return image
 
 
 def editorial_labels():
@@ -446,6 +494,7 @@ def redraw(source_root: Path, *, output_dir: Path | None = None, glyphs=None):
     if digest(atlas_bytes) != inventory["font_sha256"]:
         raise ValueError("Original font atlas hash mismatch")
     font = LatinAtlas(source, Image.open(io.BytesIO(atlas_bytes)) if glyphs is None else None, glyphs=glyphs)
+    map_font = MapFace()
     if glyphs is None:
         font_method = "original font.0.R glyphs; SourceMetrics.main_pair bearings and widths; native +6 advance"
         font_provenance = {"method": font_method, "font_sha256": digest(atlas_bytes)}
@@ -504,7 +553,10 @@ def redraw(source_root: Path, *, output_dir: Path | None = None, glyphs=None):
                         cleared.add(box)
             for label in record_labels:
                 target = channels[label["channel"]] if "channel" in label else image
-                layouts[label["id"]] = paint(target, label, font)
+                renderer = map_font if label["id"].startswith("map.") else font
+                layouts[label["id"]] = paint(target, label, renderer)
+                if renderer is map_font:
+                    layouts[label["id"]]["raster_method"] = map_font.provenance["method"]
             # Vendor packers retain original row padding. Only independently edited
             # A4 planes are changed; other planes are passed back byte-for-byte.
             with tempfile.TemporaryDirectory(prefix="ui-record-") as temporary:
@@ -559,6 +611,7 @@ def redraw(source_root: Path, *, output_dir: Path | None = None, glyphs=None):
                   font_asset_scope="UI TPL replacements only; selected native font packaging is external",
                   font_method=font_method, selected_font=font_provenance,
                   selected_glyphs_sha256=glyph_hash.hexdigest(),
+                  map_raster=map_font.provenance,
                   default_stroke_filter=font.default_weight,
                   output_dir=str(output_dir), labels=label_report, records=records_report,
                   inventory=inventory["assets"], unresolved_bindings=inventory["unresolved_bindings"],

@@ -2,17 +2,16 @@
 
 Unofficial English localization of **ToHeart2 DX PLUS** (PS3, `BLJM60381`).
 
-The English installer is a **preview, not a finished patch**. **v0.4** now packages
-the glossary-corrected replacement pair: 4,633 additional name records across 388
-files, plus the retained contraction spacing, English ruby, Ikuno text-size and
-editorial fixes. **This replacement pair has not been runtime-tested**; the user's
-earlier report applies only to the superseded v0.4 pair. Full bilingual, save and
-route review remains incomplete. See [`docs/release-v0.4.md`](docs/release-v0.4.md).
+The English installer is a **preview, not a finished patch**. **v0.5** includes
+the previously applied translation-script and glossary fixes, matching compound
+punctuation, cleaner map labels and corrected music-gallery panel/scrollbar layout.
+**This new pair has not been runtime-tested.** Full bilingual, save and route
+review remains incomplete. See [`docs/release-v0.5.md`](docs/release-v0.5.md).
 
 ## Install (players)
 
-1. Download `th2dxp_en-v0.4-installer.zip` from
-   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.4), unpack it
+1. Download `th2dxp_en-v0.5-installer.zip` from
+   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.5), unpack it
    and run `th2dxp_patch_gui.exe` — Windows, no Python.
 2. Point it at the folder holding `PS3_GAME/USRDIR`.
 3. If upgrading an older patch, press **Restore original** first, then **Install**.
@@ -67,13 +66,13 @@ extracted Japanese, built ELF/SDAT or saves are tracked or published.
 
 ## Status
 
-- **v0.4 replacement:** 4,633 glossary-name corrections across 388 files, retaining
-  contraction/ruby/font-size fixes and the earlier 4,754 editorial record edits.
-  GenInterfaceJP Japanese/Latin and 75% normal-dialogue size remain unchanged.
+- **v0.5:** includes the previous live script/glossary corrections, GenInterfaceJP
+  compound punctuation, directly rasterized map labels and coordinated music
+  panel/selection/scrollbar geometry. Normal dialogue remains at 75%.
 - **Draft scope:** base-game, AnotherDays and separately owned story drafts are
   present. Draft insertion and reconstruction counts are not completeness review.
-- **Observed:** the user reported testing the original v0.4 pair, not this
-  glossary-corrected replacement. No detailed runtime acceptance is inferred.
+- **Observed:** offline reconstruction, actual font/map pixels and encoded music
+  geometry were checked. Earlier player reports do not accept this new pair.
 - **Still unverified:** full-game rendering/pagination, voice timing, cross-build
   save compatibility and route reachability. The detailed manual form remains
   unfilled; exhaustive bilingual review remains deferred.

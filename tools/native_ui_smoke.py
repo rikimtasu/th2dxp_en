@@ -43,7 +43,8 @@ def non_gpr_state(cpu):
     return cpu.f[:], cpu.v[:], cpu.cr[:], cpu.lr, cpu.xer_ca, cpu.fpscr
 
 
-def draw(cpu, image, native, text, *, site=0x8E80C, scale=0.5, proportional=True, x=20, y=10):
+def draw(cpu, image, native, text, *, site=0x8E80C, scale=0.5, proportional=True, x=20, y=10,
+         color=0xFFFFFFFF):
     """Replay a raw option-value call, never the positioned dialogue consumer."""
     word = struct.unpack_from(">I", cpu.source, 0x11804 - 0x10000)[0]
     require(word >> 26 == 14 and (word >> 21) & 31 == 6 and not (word >> 16) & 31,
@@ -56,7 +57,7 @@ def draw(cpu, image, native, text, *, site=0x8E80C, scale=0.5, proportional=True
     cpu.put(cpu.FONT + 0x14, 0, 4)
     cpu.r[1] = cpu.STACK
     cpu.put(cpu.STACK + 0x70, 0, 8)
-    cpu.r[3:9] = [cpu.FONT, x, y, 0, cpu.TEXT, 0xFFFFFFFF]
+    cpu.r[3:9] = [cpu.FONT, x, y, 0, cpu.TEXT, color]
     cpu.f[1:4] = [1.0, scale, scale]
     cpu.steps, cpu.calls = 0, 0
     decode_site(cpu, image, site)
@@ -145,11 +146,12 @@ class DialogueCPU(GlyphCPU):
 
 
 def centered_help(cpu, text, scale=None, *, center=640, y=180, bounds=(0, 1280), bottom=720,
-                  color=0xFFFFFFFF):
+                  color=0xFFFFFFFF, entry=0x1C8B8):
     """Execute 1C8B8's centered line body after its native tokenization boundary."""
     decoder = capstone.Cs(capstone.CS_ARCH_PPC, capstone.CS_MODE_64 | capstone.CS_MODE_BIG_ENDIAN)
+    relocation = entry - 0x1C8B8
     cpu.code.update({ins.address: (ins.mnemonic, ins.op_str)
-                     for ins in decoder.disasm(cpu.read(0x1C9F0, 0x48), 0x1C9F0)})
+                     for ins in decoder.disasm(cpu.read(0x1C9F0 + relocation, 0x48), 0x1C9F0 + relocation)})
     cpu.put(cpu.FONT + 0x14, 0, 4)
     cpu.put(cpu.FONT + 0x94, 2048, 4)
     if scale is None:
@@ -163,10 +165,10 @@ def centered_help(cpu, text, scale=None, *, center=640, y=180, bounds=(0, 1280),
         cpu.r[23:26] = [center, y + index * line_pitch, 0]
         cpu.r[27:31] = [cpu.TEXT, cpu.FONT, 0, color]
         cpu.f[27:32] = [float(center), 0.5, 1.0, scale, scale]
-        cpu.pc = 0x1C9F0
-        cpu.execute_until(0x1CA00)
+        cpu.pc = 0x1C9F0 + relocation
+        cpu.execute_until(0x1CA00 + relocation)
         widths.append(cpu.f[1])
-        cpu.execute_until(0x1CA38)
+        cpu.execute_until(0x1CA38 + relocation)
     count = cpu.get(cpu.FONT + 0x14, 4)
     require(count == sum(len(save_preview_smoke.units(line)) for line in lines),
             "native centered help lost a complete printable character")
@@ -450,6 +452,268 @@ def option_selector_smoke(source, image, native):
                             "Arrow bounds conservatively include the full transparent sprite and pulse rectangles."]}
 
 
+def music_content_bounds(panel, scrollbar, contents, *, clearance=8, selection=None):
+    """Check actual queued ink/role quads against the row, columns and bar.
+
+    Rectangles are half-open. Use the entire role bank (including transparent
+    pixels), so the retained 301-pixel old-bar collision cannot be hidden by a
+    metric-only artist check.
+    """
+    left, top, right, bottom = panel
+    require(0 <= left < right <= 1280 and 0 <= top < bottom <= 720,
+            "music row panel leaves the viewport")
+    require(right + clearance <= scrollbar[0] < scrollbar[1] <= 1280,
+            "music row panel overlaps or crowds the scrollbar")
+    if selection is not None:
+        require(selection == panel, "encoded music selection no longer covers the complete row panel")
+    for content in contents:
+        x, y, r, b = content["bounds"]
+        require(left <= x < r <= right and top <= y < b <= bottom,
+                "complete music content leaves its actual row panel")
+        require(r + clearance <= scrollbar[0],
+                "complete music content collides with the scrollbar")
+        require(x >= content.get("column_left", left),
+                "complete credited name overlaps its role label column")
+        if "next_column" in content:
+            require(r + clearance <= content["next_column"],
+                    "complete music content overlaps another column or panel edge")
+
+
+class MusicCPU(SpriteCPU):
+    """Execute the native row/selection loop and scrollbar, not forwarded args.
+
+    Only renderer submissions, GUI handles and centered line tokenization are
+    bounded. Caller branches, both artist Ys, glyph queues and the scrollbar's
+    thumb arithmetic execute encoded code on the full supplied ELF mapping.
+    """
+
+    def __init__(self, source, image, native):
+        self.music_targets = {}
+        super().__init__(source, image, native)
+        self.image, self.native = image, native
+        decoder = capstone.Cs(capstone.CS_ARCH_PPC, capstone.CS_MODE_64 | capstone.CS_MODE_BIG_ENDIAN)
+        for begin, end in ((0x9BCB8, 0x9C2F8), (0x9B1B8, 0x9B528)):
+            self.code.update({ins.address: (ins.mnemonic, ins.op_str)
+                              for ins in decoder.disasm(self.read(begin, end - begin), begin)})
+        for at, value in ((self.MODEL, self.VTABLE), (self.VTABLE + 20, self.OPD)):
+            self.put(at, value, 4)
+        self.drawer = save_preview_smoke.PreviewCPU(source, image, native)
+        self.metrics = save_preview_smoke.SourceMetrics(image)
+        self.panels, self.selections, self.roles, self.text_calls, self.bars = [], [], [], [], []
+        music_sites = set()
+        for ins in decoder.disasm(source[0x8BCFC:0x8C26C], 0x9BCFC):
+            if ins.mnemonic != "bl" or int(ins.op_str, 0) not in (0x1C178, 0x1C8B8):
+                continue
+            mnemonic, operand = self.code[ins.address]
+            require(mnemonic == "bl", "music no longer calls its source-bound text renderer")
+            target, original = int(operand, 0), int(ins.op_str, 0)
+            require(target not in self.music_targets or self.music_targets[target] == original,
+                    "music aliases centered and non-centered renderers")
+            self.music_targets[target] = original
+            music_sites.add(hex(ins.address))
+        require(music_sites == set(native["ui_tracking"]["music_original_spacing_calls"]),
+                "music replay omits an original-spacing clone call")
+
+    def call(self, target):
+        if target == 0x288A8:
+            require(self.r[3] == self.ATLAS and self.r[4] in (0, 1),
+                    "music leaves the original Extra atlas records")
+            self.r[3], self.lr = self.RECORD, self.pc + 4
+            return self.lr
+        if target not in self.music_targets:
+            return super().call(target)
+        require(self.r[3] == self.FONT and self.f[1] == 1.0 and self.f[2] == self.f[3],
+                "music changed its original font, opacity or glyph proportions")
+        text, scale = self.string(self.r[7]), self.f[2]
+        x, y, color = signed(self.r[4], 16), signed(self.r[5], 16), self.r[8] & 0xFFFFFFFF
+        if self.music_targets[target] == 0x1C8B8:
+            records, _ = centered_help(self.drawer, text, scale, center=x, y=y, color=color, entry=target)
+        else:
+            records = draw(self.drawer, self.image, self.native, text, site=self.pc,
+                           scale=scale, x=x, y=y, color=color)
+        require(all(record[10] == color for record in records),
+                "music glyph queue changed the native selected/locked color")
+        ink = []
+        for unit, record in zip(save_preview_smoke.units(text), records):
+            a, width = self.metrics.main_pair(unit[0]) if len(unit) == 1 else (0, 48)
+            if unit == b" " or not width:
+                continue
+            left = signed(record[2], 16) + int(save_preview_smoke.fused(a, scale, 0.5))
+            right = signed(record[2], 16) + int(save_preview_smoke.fused(a + width, scale, 0.5))
+            ink.append([left, signed(record[3], 16), right, signed(record[5], 16) + 1])
+        # Empty native artist fields are valid, and still execute both draws.
+        bounds = ([min(q[0] for q in ink), min(q[1] for q in ink),
+                   max(q[2] for q in ink), max(q[3] for q in ink)] if ink else None)
+        self.text_calls.append({"site": hex(self.pc), "native_index": signed(self.r[29], 32),
+                                "pointer": self.r[7], "text_hex": text.hex(), "origin": [x, y],
+                                "scale": scale, "color": color, "glyphs": len(records),
+                                "bounds": bounds})
+        self.lr = self.pc + 4
+        return self.lr
+
+    def step(self):
+        mnemonic, operands = self.code[self.pc]
+        if mnemonic == "fctidz":
+            dest, src = [int(part[1:]) for part in operands.split(", ")]
+            # FCFID consumes the integer bit pattern, not its numeric FP value.
+            bits = (int(self.f[src]) & ((1 << 64) - 1)).to_bytes(8, "big")
+            self.f[dest] = struct.unpack(">d", bits)[0]
+        elif mnemonic == "bdnzctrl":
+            require(self.ctr == 0xDEAD80, "music leaves its synthetic renderer boundary")
+            site = self.pc
+            if site == 0x9C2AC:
+                x, y, width, height = [signed(self.r[reg], 16) for reg in (4, 5, 6, 7)]
+                self.selections.append({"native_index": signed(self.r[29], 32),
+                                        "quad": [x, y, x + width, y + height]})
+            elif site == 0x9B4C8:
+                # Native nine-slice call: four X knots, four Y knots. The
+                # conservative thumb bounds include every edge/corner cell.
+                xs = [signed(self.r[reg], 16) for reg in (4, 5, 6, 7)]
+                ys = [signed(self.r[reg], 16) for reg in (8, 9, 10)]
+                ys.append(signed(self.get(self.r[1] + 0x70, 8), 16))
+                self.bars.append({"site": hex(site), "quad": [min(xs), min(ys), max(xs), max(ys)],
+                                  "x_knots": xs, "y_knots": ys})
+            else:
+                quad = [signed(self.r[reg], 16) for reg in (4, 5, 6, 7)]
+                item = {"site": hex(site), "quad": quad, "native_index": signed(self.r[29], 32)}
+                if site == 0x9BE08:
+                    self.panels.append(item)
+                elif site in (0x9C064, 0x9C1A0):
+                    item["source"] = [signed(self.r[reg], 16) for reg in (8, 9, 10)]
+                    item["source"].append(self.get(self.r[1] + 0x70, 8))
+                    self.roles.append(item)
+                elif site in (0x9B2D4, 0x9B330, 0x9B38C):
+                    self.bars.append(item)
+                else:
+                    require(site == 0x9BEAC, "unmodeled music renderer submission")
+            self.lr = self.pc + 4
+        else:
+            return super().step()
+        self.executed.add(self.pc)
+        self.pc += 4
+        self.steps += 1
+
+
+def music_panel_smoke(source, image, native):
+    layout = native["ui_graphic_layout"]
+    expected = native_ui_patch.MUSIC_PANEL_GEOMETRY
+    require(all(layout["music_panel_geometry"][key] == value for key, value in expected.items()),
+            "music layout report disagrees with the coordinated panel migration")
+    reference = project.load(project.ROOT / "work/ui/music-credit-reference.json")["native_rows"]
+    require(len(reference) == 51 and {row["index"] for row in reference} == set(range(51)),
+            "music fixture does not retain all 51 native rows")
+    cpu = MusicCPU(source, image, native)
+    cases, rows, roles, full_rows = [], [], [], set()
+    # Settled pages cover all 51 complete records. Fractional scroll, first/
+    # last selected rows and locked records exercise their real caller branches.
+    scenarios = [(float(top), min(top + 1, 50), None)
+                 for top in (0, 8, 16, 24, 32, 40, 43)]
+    scenarios += [(0.5, 0, 1), (21.5, 22, 23), (43.0, 50, 49)]
+    for scroll, selected, locked in scenarios:
+        seed(cpu, 0)
+        cpu.panels, cpu.selections, cpu.roles, cpu.text_calls, cpu.bars = [], [], [], [], []
+        cpu.r[20], cpu.r[21], cpu.r[23], cpu.r[31] = 1, 0x656A30, 0x9BA70, cpu.MODEL
+        cpu.f[29] = struct.unpack_from(">f", source, 0x9BA78 - 0x10000)[0]
+        for off, value in ((0x50, selected), (0x54, int(scroll)), (0x58, -1)):
+            cpu.put(cpu.MODEL + off, value & 0xFFFFFFFF, 4)
+        cpu.setfloat(cpu.MODEL + 0x64, scroll)
+        for index in range(51):
+            cpu.put(cpu.MODEL + 0x68 + index, int(index != locked), 1)
+        cpu.pc = 0x9BCB8
+        cpu.execute_until(0x9C2F8)
+        require(cpu.f[26] == cpu.f[27]
+                == struct.unpack_from(">f", source, 0x9BA88 - 0x10000)[0],
+                "music names/theme no longer retain the original readable caption scale")
+        require(len(cpu.bars) == 4, "native scrollbar lost its track, borders or thumb")
+        bar = [min(call["quad"][0] for call in cpu.bars),
+               max(call["quad"][2] for call in cpu.bars)]
+        require(bar == expected["scrollbar_envelope"]
+                and all(135 <= call["quad"][1] < call["quad"][3] <= 609 for call in cpu.bars),
+                "encoded music scrollbar leaves its migrated native envelope")
+        require(len(cpu.selections) == 1 and cpu.selections[0]["native_index"] == selected,
+                "native selected-row path lost its selection predicate")
+        for panel_call in cpu.panels:
+            index, panel = panel_call["native_index"], panel_call["quad"]
+            row = reference[index]
+            top = panel[1]
+            require(panel == [254, top, 1250, top + 54],
+                    "encoded music row panel does not enclose the complete migrated columns")
+            row_roles = [call for call in cpu.roles if call["native_index"] == index]
+            calls = [call for call in cpu.text_calls if call["native_index"] == index]
+            contents = []
+            for call in calls:
+                site = int(call["site"], 0)
+                column_left = panel[0]
+                if site in (0x9BF0C, 0x9BF3C):
+                    field, x, y, scale = 20, 342 + (site == 0x9BF3C), top + 10, 0.5
+                    next_column = layout["credit_groups"][0 if row["vocal"] else 1]["destination_x"][0]
+                elif site in (0x9BF98, 0x9BFC8):
+                    field, x, y, scale = 40, 656 + (site == 0x9BFC8), top + 34, cpu.f[27]
+                    next_column = layout["credit_groups"][0 if row["vocal"] else 1]["destination_x"][0]
+                else:
+                    group_index = int(site >= 0x9C1D4)
+                    group = layout["credit_groups"][group_index]
+                    sites = ((0x9C098, 0x9C0C8, 0x9C0F8, 0x9C128),
+                             (0x9C1D4, 0x9C204, 0x9C234, 0x9C264))[group_index]
+                    ordinal = sites.index(site)
+                    field = ((32, 36), (24, 28))[group_index][ordinal // 2]
+                    x, y, scale = group["artist_x"] + ordinal % 2, top + (5 if ordinal < 2 else 27), cpu.f[27]
+                    next_column = layout["credit_groups"][1]["destination_x"][0] if group_index == 0 else panel[2]
+                    column_left = group["destination_x"][1] + 4
+                pointer = cpu.get(row["source_file_offset"] + 0x10000 + field, 4)
+                if index == locked:
+                    require(field == 20 and call["pointer"] == 0x108788,
+                            "locked music path leaks credit/title bindings")
+                else:
+                    require(call["pointer"] == pointer and call["text_hex"] == cpu.string(pointer).hex(),
+                            "music caller changed a complete native title/theme/credit binding")
+                require(call["origin"] == [x, y] and call["scale"] == scale,
+                        "music migration changed original text scale or either real artist Y")
+                if call["bounds"] is not None:
+                    contents.append(dict(call, next_column=next_column, column_left=column_left))
+            expected_calls = 2
+            # The actual optional theme binding, rather than metadata wording,
+            # determines whether its native centered draw pair is reachable.
+            if index != locked:
+                has_theme = bool(cpu.get(row["source_file_offset"] + 0x10000 + 40, 4))
+                expected_calls = 6 + 4 * bool(row["vocal"]) + 2 * has_theme
+                full_rows.add(index)
+            require(len(calls) == expected_calls
+                    and len(row_roles) == (0 if index == locked else 1 + bool(row["vocal"])),
+                    "music row dropped a complete title/theme/credit draw pair")
+            for role in row_roles:
+                group_index = int(role["site"] == "0x9c1a0")
+                group = layout["credit_groups"][group_index]
+                require(role["source"] == group["staged_source_crop"]
+                        and role["quad"] == [group["destination_x"][0], top + 5,
+                                            group["destination_x"][1], top + 49],
+                        "encoded music role bank changed its complete source or vertical geometry")
+                contents.append({"bounds": role["quad"]})
+                roles.append(role)
+            music_content_bounds(
+                panel, bar, contents, clearance=expected["minimum_clearance"],
+                selection=cpu.selections[0]["quad"] if index == selected else None)
+            rows.append({"native_index": index, "scroll": scroll, "locked": index == locked,
+                         "selected": index == selected, "panel": panel, "text_calls": calls})
+        cases.append({"scroll": scroll, "selected": selected, "locked": locked,
+                      "selection": cpu.selections, "scrollbar": cpu.bars, "scrollbar_envelope": bar})
+    require(full_rows == set(range(51)), "encoded music replay omits complete native records")
+    return {"native_music_rows": rows, "native_music_role_quads": roles,
+            "native_music_panel_cases": cases, "complete_native_rows": len(full_rows),
+            "artist_font_scale": struct.unpack_from(">f", source, 0x9BA88 - 0x10000)[0],
+            "music_caller_slice": ["0x9bcb8", "0x9c2f8"],
+            "music_scrollbar_body": ["0x9b1b8", "0x9b528"],
+            "music_instruction_sites": layout["music_panel_geometry"]["source_instruction_sites"],
+            "synthetic_boundaries": cpu.boundaries, "runtime_accepted": False,
+            "music_limitations": [
+                "Full pre-append UI ELF required; final scenario mappings must not bypass the synthetic-address guard.",
+                "GUI/atlas handles, renderer submissions and selected-row width/height submission are synthetic boundaries.",
+                "Scrollbar track/borders and nine-slice thumb knots execute natively; GPU nine-slice tessellation is not replayed.",
+                "Native centered line measurement/draw executes after bounded single-line tokenization.",
+                "Queued vertical cells and whole role-bank rectangles are conservative, not GPU pixel acceptance.",
+                "Playback-indicator overlay and input-driven scrolling transitions are not exercised."]}
+
+
 def geometry_smoke(source, image, native):
     cpu = SpriteCPU(source, image, native)
     seed(cpu, 0)
@@ -462,60 +726,8 @@ def geometry_smoke(source, image, native):
         require([x, y, x + width, y + 20] == entry["staged_source_crop"],
                 "actual native footer copy does not select its complete readable caption")
         captions.append({"id": entry["id"], "source_rect": [x, y, x + width, y + 20]})
-    seed(cpu, 0)
-    cpu.r[23] = 0x9BA70
-    cpu.pc = 0x9BCFC
-    cpu.execute_until(0x9BD08)
-    name_scale = cpu.f[26]
-    require(name_scale == struct.unpack_from(">f", source, 0x9BA88 - 0x10000)[0],
-            "music names do not reuse the original readable character-caption preset")
-    rectangles = []
-    for index, (begin, stop) in enumerate(((0x9BFD0, 0x9C064), (0x9C130, 0x9C1A0))):
-        seed(cpu, index)
-        cpu.r[17], cpu.r[19], cpu.r[24], cpu.r[25] = 0x656A30, 0, 205, 227
-        cpu.r[26], cpu.r[27], cpu.r[28], cpu.r[31] = 249, 0xFFFFFFFF, 200, cpu.MODEL
-        cpu.f[28] = 1.0
-        cpu.pc = begin
-        cpu.execute_until(stop)
-        destination = [signed(cpu.r[reg], 16) for reg in (4, 5, 6, 7)]
-        source_rect = [signed(cpu.r[reg], 16) for reg in (8, 9, 10)] + [cpu.get(cpu.r[1] + 0x70, 8)]
-        group = native["ui_graphic_layout"]["credit_groups"][index]
-        require(source_rect == group["staged_source_crop"]
-                and destination == [group["destination_x"][0], 205, group["destination_x"][1], 249],
-                "encoded music role quad differs from its paired readable atlas bank")
-        require(destination[2] - destination[0] == source_rect[2] - source_rect[0]
-                and destination[3] - destination[1] == source_rect[3] - source_rect[1],
-                "native sprite geometry condenses the readable credit headings")
-        rectangles.append({"source": source_rect, "destination": destination, "native_stop": hex(stop)})
-    music_rows = project.load(project.ROOT / "work/ui/music-credit-reference.json")["native_rows"]
-    music_geometry = []
-    drawer = save_preview_smoke.PreviewCPU(source, image, native)
-    for row in music_rows:
-        table = row["source_file_offset"] + 0x10000
-        title = drawer.string(drawer.get(table + 20, 4))
-        title_records = draw(drawer, image, native, title, site=0x9BF0C, x=343, y=210)
-        title_right = max(signed(record[4], 16) + 1 for record in title_records)
-        limit = native["ui_graphic_layout"]["credit_groups"][0 if row["vocal"] else 1]["destination_x"][0]
-        require(title_right + 8 <= limit, "complete full-size music title overlaps a readable credit column")
-        names = []
-        for group_index, fields in ((0, (32, 36)), (1, (24, 28))):
-            group = native["ui_graphic_layout"]["credit_groups"][group_index]
-            if group_index == 0 and not row["vocal"]:
-                continue
-            for field in fields:
-                text = drawer.string(drawer.get(table + field, 4))
-                records = draw(drawer, image, native, text, site=0x9C098 if group_index == 0 else 0x9C1D4,
-                               scale=name_scale, x=group["artist_x"] + 1, y=205)
-                right = max(signed(record[4], 16) + 1 for record in records)
-                next_column = native["ui_graphic_layout"]["credit_groups"][1]["destination_x"][0] if group_index == 0 else 1280
-                require(right + 8 <= next_column, "complete credited name overlaps another column or viewport edge")
-                names.append({"field": field, "text_hex": text.hex(), "right_edge": right,
-                              "next_column": next_column, "font_scale": name_scale})
-        music_geometry.append({"native_index": row["index"], "title_right": title_right,
-                               "credit_column_left": limit, "title_font_pixels": 24, "names": names})
-    return {"native_caption_cells": captions, "native_music_role_quads": rectangles,
-            "native_music_rows": music_geometry, "artist_font_scale": name_scale,
-            "synthetic_boundaries": cpu.boundaries, "runtime_accepted": False}
+    music = music_panel_smoke(source, image, native)
+    return {"native_caption_cells": captions, **music}
 
 
 def smoke(source, image, native):

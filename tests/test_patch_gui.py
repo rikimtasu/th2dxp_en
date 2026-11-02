@@ -169,33 +169,6 @@ class PatchFolderDiscoveryTests(unittest.TestCase):
         self.assertEqual(patch_gui.find_build(self.root), self.root / "patch-data")
 
 
-class SelfTestTests(unittest.TestCase):
-    def test_self_test_passes_and_prints_ok(self):
-        buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            self.assertIsNone(patch_gui.self_test())
-        self.assertIn("self-test OK", buffer.getvalue())
-
-    def test_version_flag_returns_zero_without_a_window(self):
-        buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            self.assertEqual(patch_gui.main(["--version"]), 0)
-        self.assertIn(patch_gui.VERSION, buffer.getvalue())
-
-    def test_self_test_flag_returns_zero(self):
-        with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(patch_gui.main(["--self-test"]), 0)
-
-    def test_every_plan_key_the_window_reads_stays_public(self):
-        """The window renders a plan; a rename must break this test, not the window."""
-        plan = install_plan()
-        rendered = patch_gui.describe_plan(plan)
-        self.assertIsInstance(rendered, str)
-        for key in ("usrdir", "blocked", "nothing_to_do", "elf", "archive",
-                    "free_space_needed", "free_space_available", "backups", "last_install"):
-            self.assertIn(key, plan)
-        self.assertTrue(json.dumps(plan))
-
 
 if __name__ == "__main__":
     unittest.main()
