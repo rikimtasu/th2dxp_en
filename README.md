@@ -2,16 +2,16 @@
 
 Unofficial English localization of **ToHeart2 DX PLUS** (PS3, `BLJM60381`).
 
-The English installer is a **preview, not a finished patch**. **v0.5** includes
-the previously applied translation-script and glossary fixes, matching compound
-punctuation, cleaner map labels and corrected music-gallery panel/scrollbar layout.
-**This new pair has not been runtime-tested.** Full bilingual, save and route
-review remains incomplete. See [`docs/release-v0.5.md`](docs/release-v0.5.md).
+The **v0.6** English installer is a **preview, not a finished patch**. It includes
+25 new translation-record fixes for meaning, fragment joins, honorifics and
+unnatural wording, alongside the existing English UI and font changes.
+**This version's executable and matching `data.sdat` have not been runtime-tested.** Full bilingual, save and route
+review remains incomplete. See [`docs/release-v0.6.md`](docs/release-v0.6.md).
 
 ## Install (players)
 
-1. Download `th2dxp_en-v0.5-installer.zip` from
-   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.5), unpack it
+1. Download `th2dxp_en-v0.6-installer.zip` from
+   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.6), unpack it
    and run `th2dxp_patch_gui.exe` — Windows, no Python.
 2. Point it at the folder holding `PS3_GAME/USRDIR`.
 3. If upgrading an older patch, press **Restore original** first, then **Install**.
@@ -66,9 +66,11 @@ extracted Japanese, built ELF/SDAT or saves are tracked or published.
 
 ## Status
 
-- **v0.5:** includes the previous live script/glossary corrections, GenInterfaceJP
+- **v0.6:** adds 25 text-record fixes from the November 11 review. Full bilingual
+  review remains incomplete; unconfirmed candidates were not bulk-applied.
+- **Retained features:** include the previous live script/glossary corrections, GenInterfaceJP
   compound punctuation, directly rasterized map labels and coordinated music
-  panel/selection/scrollbar geometry. Normal dialogue remains at 75%.
+  panel/selection/scrollbar geometry. Normal-dialogue font scale remains at 75%.
 - **Draft scope:** base-game, AnotherDays and separately owned story drafts are
   present. Draft insertion and reconstruction counts are not completeness review.
 - **Observed:** offline reconstruction, actual font/map pixels and encoded music
