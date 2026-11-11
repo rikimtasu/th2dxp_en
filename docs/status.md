@@ -1,12 +1,13 @@
 # Status — 2026-11-11
 
-## v0.6 rebuilt and packaged — 2026-11-11
+## v0.6 published — 2026-11-11
 
 - Rebuilt from the current scripts with **25 November 11 text-record edits across 17 files**, retaining the v0.5 UI/font corrections and 75% dialogue scale. The five context questions are resolved: three corrections and two source-supported readings retained. Unconfirmed boundary candidates were not bulk-applied; full bilingual review remains incomplete.
 - New pair: `build/english-v0.6-20261111/EBOOT.elf` and identical `EBOOT_EN.elf`, **10,748,536 bytes**, SHA-256 `e2d628fb8bcc6a1eba5b7967725048f53f1cfed62d36b43f51581615c4fdb84d`; paired `assets/data.sdat`, **2,202,516,368 bytes**, SHA-256 `2907821bb17e820de78684d435c4e98432913dfef5f95dfa12860bb9cd278481`. The archive was rebuilt from the verified original backup; the incompatible earlier reuse path was not retried or weakened.
 - Staging compared **183,446 text records across 1,884 payloads**, verified **115 choice files** and preserved **877 untouched payloads** without byte changes. Output SDAT authentication and complete DAT decryption passed. Both original archive recipes reconstruct their expected outputs while preserving the source-specific native entries. **303 unit tests passed.**
 - The frozen v0.6 installer contains all **17 current payload files** and both pinned helpers. Its embedded executable-patch code reconstructs the new ELF exactly; `--version` and `--self-test` exit successfully with isolated settings. The six-file ZIP allowlist, CRC and source-content checks passed. Package: `release/v0.6/th2dxp_en-v0.6-installer.zip`, **37,801,663 bytes**, SHA-256 `fec38f5a6c84f61de22565c0f4aa0a0ab0a0f7a099b0c596352c5df2441f9d29`.
 - This pair has no game runtime observations or production acceptance. Use Restore original → Install, then a fresh New Game and new same-build execution-position saves. Earlier builds, releases, evidence and personal saves remain untouched. No emulator or installation/restore operation was run. Offline build/package evidence: `work/qa/release-v06-20261111/`.
+- Published: https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.6, a non-draft preview prerelease targeting source commit `96c0d1990ecd756c18938255018347efa7e76056`. GitHub's sole ZIP asset reports the same size and SHA-256 as the verified local package. Earlier releases were not replaced.
 
 ## v0.5 published — script corrections and three UI fixes — 2026-11-03
 
