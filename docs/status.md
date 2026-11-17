@@ -1,12 +1,13 @@
 # Status — 2026-11-17
 
-## v0.7 preview — broad script and boundary fixes — 2026-11-17
+## v0.7 published — 2026-11-17
 
 - Rebuilt from the current scripts after auditing all **1,124 editable script files** (**183,446 text records**) and applying **11,179 unique `translated_text` fixes across 466 files** (333 continuity, actor/addressee, quote/bracket, stray-Japanese, and typo fixes across 147 files; 10,856 missing inter-item space insertions across 410 files; manifests in `work/qa/translation-fixes-20261117/`), retaining the v0.5 UI/font corrections and 75% dialogue scale. Full bilingual semantic review remains incomplete.
 - New pair: `build/english-v0.7-20261117/EBOOT.elf` and identical `EBOOT_EN.elf`, **10,749,496 bytes**, SHA-256 `71826c7d9bd0dcb237bdb78323be3600a124b1f91ba96544a0b165a91f8d3fcd`; paired `assets/data.sdat`, **2,202,516,368 bytes**, SHA-256 `c2a662b9cd4cb7fc59a44cc8d0a8d69e2a1b2f1deda848dd923cd06cfcc61f29` (rebuilt from verified `.th2dxp-backup/data.sdat`).
 - Staging compared **183,446 text records across 1,884 payloads**, verified **115 choice files**, and preserved **877 untouched payloads** without byte changes (`177` suppressed ruby readings, `18,723` canonicalized lexical apostrophes in memory). Output SDAT authentication and complete DAT decryption passed. Both original archive recipes reconstruct their expected outputs (`build/patch-data-v0.7/`: `23,394,184` bytes across `17` files). **303 unit tests passed** and `tools/update_glossary.py --check` passed.
 - The frozen v0.7 installer (`dist/v0.7/th2dxp_patch_gui.exe`, **38,065,781 bytes**, SHA-256 `217f134a46a12a1891505583365002b3b86ab5b09f1830cfcaa8e1209c44af66`) contains all **17 current payload files** and both pinned helpers. Its embedded executable-patch code reconstructs the new ELF byte-for-byte; `--version` and `--self-test` pass with isolated settings. The six-file ZIP allowlist, CRC, and source-content checks passed: `release/v0.7/th2dxp_en-v0.7-installer.zip`, **37,801,862 bytes**, SHA-256 `2a18ee30ec2d45afdeeff85d71c2c96e9673273560a6d9688a2f264f1a6fc9b0`.
 - This pair has no game runtime observations or production acceptance. Use Restore original → Install, then a fresh New Game and new same-build execution-position saves. Earlier builds, releases, evidence, and personal saves remain untouched. No emulator or installation/restore operation was run. Offline build/package evidence: `work/qa/release-v07-20261117/`.
+- Published: https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.7, a non-draft preview prerelease targeting source commit `dd714326772239bef0a24c5b6f915f99ab97768d`. GitHub's sole ZIP asset reports the same size (`37,801,862` bytes) and SHA-256 as the verified local package. Earlier releases were not replaced.
 
 ## Script audit and prose/boundary fixes — 2026-11-17
 
