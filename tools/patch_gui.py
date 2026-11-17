@@ -21,10 +21,10 @@ import patch_engine
 import patch_game
 
 TITLE = "ToHeart2 DX PLUS - English patch"
-VERSION = "0.6"
+VERSION = "0.7"
 SETTINGS_NAME = "th2dxp_patch_ui.json"
 INTRO = (
-    "v0.6 preview: 25 new text fixes; retains the v0.5 UI and font changes.\n"
+    "v0.7 preview: 11,179 translation-script fixes across 466 files; retains v0.5 UI/font changes.\n"
     "This pair is not runtime-tested; full bilingual review remains incomplete.\n"
     "Only your game folder is needed; no Python or separate patch data.\n"
     "If an older patch is installed, use Restore original first, then Install.\n"

@@ -2,16 +2,17 @@
 
 Unofficial English localization of **ToHeart2 DX PLUS** (PS3, `BLJM60381`).
 
-The **v0.6** English installer is a **preview, not a finished patch**. It includes
-25 new translation-record fixes for meaning, fragment joins, honorifics and
-unnatural wording, alongside the existing English UI and font changes.
+The **v0.7** English installer is a **preview, not a finished patch**. It includes
+11,179 translation-script fixes across 466 files for continuity, corrupted splits,
+quotes/brackets and missing inter-item spaces, alongside the existing English UI
+and font changes.
 **This version's executable and matching `data.sdat` have not been runtime-tested.** Full bilingual, save and route
-review remains incomplete. See [`docs/release-v0.6.md`](docs/release-v0.6.md).
+review remains incomplete. See [`docs/release-v0.7.md`](docs/release-v0.7.md).
 
 ## Install (players)
 
-1. Download `th2dxp_en-v0.6-installer.zip` from
-   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.6), unpack it
+1. Download `th2dxp_en-v0.7-installer.zip` from
+   [Releases](https://github.com/rikimtasu/th2dxp_en/releases/tag/v0.7), unpack it
    and run `th2dxp_patch_gui.exe` — Windows, no Python.
 2. Point it at the folder holding `PS3_GAME/USRDIR`.
 3. If upgrading an older patch, press **Restore original** first, then **Install**.
@@ -66,6 +67,9 @@ extracted Japanese, built ELF/SDAT or saves are tracked or published.
 
 ## Status
 
+- **v0.7:** applies 11,179 unique `translated_text` corrections across 466 script files
+  (333 continuity, actor, quote/bracket and typo fixes plus 10,856 missing inter-item
+  spaces). Full bilingual semantic review remains incomplete.
 - **v0.6:** adds 25 text-record fixes from the November 11 review. Full bilingual
   review remains incomplete; unconfirmed candidates were not bulk-applied.
 - **Retained features:** include the previous live script/glossary corrections, GenInterfaceJP

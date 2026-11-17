@@ -1,5 +1,13 @@
 # Decisions
 
+## 2026-11-17 — Rebuild and publish a new v0.7 preview
+
+The user requests rebuilding the patch after checking and correcting the translation scripts and releasing it as a new version on GitHub. Use **v0.7**, following published v0.6. Rebuild from the current scripts, including the 11,179 unique record edits across 466 files (Phase 1 prose/quote/continuity fixes and Phase 2 inter-item boundary spacing fixes), and retain the existing UI, font and 75% dialogue-scale changes. Use a separate build directory, patch payload, installer and release ZIP; preserve earlier releases, tags, packages and evidence.
+
+Carry both supported original archive recipes, their differing native entries, the existing licenses and reference attribution, and the user's earlier permission confirmation. No new permission document or independent rights review is claimed. Keep the release patch-only; proprietary inputs, full game files, extracted scripts, references and saves are not publication assets.
+
+This approval authorizes diagnostic rebuilding and publication, not runtime or production acceptance. The new build remains a preview with no game-run observations. Disclose incomplete full bilingual review and the requirement for a fresh New Game and new same-build execution-position saves. Do not launch an emulator, deploy to an installed game, modify saves or transfer earlier runtime reports.
+
 ## 2026-11-11 — Rebuild and publish a new v0.6 preview
 
 The user explicitly requests rebuilding the patch with the current translation fixes and releasing it directly as a new version on GitHub. Use **v0.6**, following published v0.5. Rebuild from the current scripts, including the 25 November 11 text-record edits, and retain the existing UI, font and 75% dialogue-scale changes. Use a separate build directory, patch payload, installer and release ZIP; preserve earlier releases, tags, packages and evidence.
