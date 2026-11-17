@@ -72,6 +72,8 @@ class ChoiceTextTests(unittest.TestCase):
             ("source", {"original_text": "Wrong source"}, "operand order/text", True),
             ("encoding", {"translated_text": "\u301c *nnk"}, "encoding or native", True),
             ("controls", {"translated_text": "Go elsewhere"}, "encoding or native", True),
+            ("blank", {"translated_text": "   "}, "encoding or native", True),
+            ("pua", {"translated_text": "Go *nnk \ue000"}, "encoding or native", True),
             ("capacity", {"translated_text": "A longer choice *nnk"}, "manual engine acceptance", False),
         ]
         for name, changes, error, growth in cases:

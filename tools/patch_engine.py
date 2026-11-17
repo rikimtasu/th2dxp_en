@@ -120,7 +120,8 @@ def default_patch_dir(start=None):
     roots = []
     if getattr(sys, "frozen", False):
         roots.append(Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)))
-    roots += [patch_game.tool_root(), ROOT / "build" / "patch-data-v0.3"]
+    roots += [patch_game.tool_root(), ROOT / "build" / "patch-data-v0.7",
+              ROOT / "build" / "patch-data-v0.3"]
     for root in roots:
         for candidate in (root / "patch-data", root):
             if (candidate / patch_data.MANIFEST_NAME).is_file():

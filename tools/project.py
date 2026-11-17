@@ -36,6 +36,10 @@ def engine_controls(text):
     return _ENGINE_CONTROLS.findall(text)
 
 
+def private_glyphs(text):
+    return [c for c in text if 0xE000 <= ord(c) <= 0xF8FF]
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -187,7 +191,7 @@ def validate(scripts, meta, *, allow_growth=False):
                 if value == old["translated_text"]:
                     continue
                 where = f"{name}:{ui}:{ii}"
-                if not value or any(ord(c) < 32 for c in value):
+                if not value or not value.strip(" ") or any(ord(c) < 32 or ord(c) == 127 for c in value):
                     raise ValueError(f"{where}: blank text or literal control characters; preserve engine escapes")
                 encoded = value.encode(CONFIG["encoding"], errors="strict")
                 if encoded.decode(CONFIG["encoding"], errors="strict") != value:
@@ -197,6 +201,8 @@ def validate(scripts, meta, *, allow_growth=False):
                     raise ValueError(f"{where}: {len(encoded)} bytes exceeds original {len(old_encoded)}; complete manual engine acceptance is required")
                 if engine_controls(value) != engine_controls(old["original_text"]):
                     raise ValueError(f"{where}: inline engine escapes changed")
+                if private_glyphs(value) != private_glyphs(old["original_text"]):
+                    raise ValueError(f"{where}: private-use glyphs changed")
                 file_changed = True
                 translated += 1
         if restored != original:

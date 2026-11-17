@@ -185,8 +185,12 @@ def rebuild(payload, edited, kit, *, allow_growth):
         if record["text"] != new["original_text"] or index != after["choice_index"]:
             raise ValueError("Choice companion no longer matches source operand order/text")
         text = new["translated_text"]
+        if not text or not text.strip() or any(ord(c) < 32 or ord(c) == 127 for c in text):
+            raise ValueError("Choice encoding or native inline controls changed")
         encoded = text.encode("cp932", errors="strict")
-        if encoded.decode("cp932") != text or project.engine_controls(text) != project.engine_controls(record["text"]):
+        if (encoded.decode("cp932") != text
+                or project.engine_controls(text) != project.engine_controls(record["text"])
+                or project.private_glyphs(text) != project.private_glyphs(record["text"])):
             raise ValueError("Choice encoding or native inline controls changed")
         if not allow_growth and len(encoded) > record["end"] - record["operand_offset"] - 3:
             raise ValueError("Native choice growth requires complete manual engine acceptance")

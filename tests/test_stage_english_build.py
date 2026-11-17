@@ -232,6 +232,7 @@ class AuxiliarySubsetTests(unittest.TestCase):
     def aliases(self):
         return {'A': (0x8260, 0), 'b': (0x8261, 1), 'C': (0x8262, 2),
                 'k': (0x8263, 3), 'x': (0x8264, 4), 'y': (0x8265, 5),
+                'T': (0x8273, 7), 'a': (0x8281, 8),
                 ' ': (0x8140, 6)}
 
     def test_only_the_requested_font_spans_contribute_codes(self):
@@ -260,6 +261,15 @@ class AuxiliarySubsetTests(unittest.TestCase):
         with patch.object(stage.geninterface_latin, 'aliases', return_value=self.aliases()):
             codes = stage.auxiliary_latin_codes(scripts, b'source', 3)
         self.assertEqual(codes, {0x8264, 0x8265})
+
+    def test_inline_font_switch_and_star_macros_are_resolved(self):
+        scripts = {'script_0001.json': [{'items': [
+            {'kind': 'text', 'original_text': '<G3>x<G0>', 'translated_text': '*nn*h2y'},
+            {'kind': 'text', 'original_text': 'z', 'translated_text': 'C'},
+        ]}]}
+        with patch.object(stage.geninterface_latin, 'aliases', return_value=self.aliases()):
+            codes = stage.auxiliary_latin_codes(scripts, b'source', 3)
+        self.assertEqual(codes, {0x8273, 0x8281, 0x8263, 0x8265})
 
 
 if __name__ == "__main__":

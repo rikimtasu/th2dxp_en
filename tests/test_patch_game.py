@@ -214,6 +214,11 @@ class ImportGtOutputTests(unittest.TestCase):
             self.assertFalse(blocked["written"])
             self.assertEqual(project.load(scripts / "script_0000.json")[0]["items"][0]["translated_text"],
                              "The line.")
+            project.save(export / "base-game/gt_output/010301000.json", self.rows("元の文"))
+            untranslated = importer.run(export, "base-game", write=True)
+            self.assertEqual(untranslated["defect_count"], 0)
+            self.assertEqual(project.load(scripts / "script_0000.json")[0]["items"][0]["translated_text"],
+                             "The line.")
 
 
 if __name__ == "__main__":

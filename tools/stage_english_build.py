@@ -80,6 +80,7 @@ FONT_TAG = re.compile(r'<G(\d)>')
 SPLIT_FONT_TAG = re.compile(r'^G(\d)$')
 INLINE_TAG = re.compile(r'<[^>]*>')
 BACKSLASH_ESCAPE = re.compile(r'\\.')
+STAR_MACRO = re.compile(r'\*(?:(nf|nl|nn)k?[1-6]?|(h2)[1-6]?)')
 
 # Consume the whole Unicode word chain first, so mixed Japanese/digit tokens
 # cannot backtrack into a smaller apparent English contraction.
@@ -180,6 +181,12 @@ def auxiliary_latin_codes(scripts, source, font):
     trusting a snapshot; an overflow fails closed inside the patch.
     """
     aliases = geninterface_latin.aliases(source)
+    macro_names = {
+        "nf": native_default_name_patch.GIVEN,
+        "nl": native_default_name_patch.SURNAME,
+        "nn": native_default_name_patch.NICKNAME,
+        "h2": "",
+    }
     needed = set()
     for units in scripts.values():
         current = 0
@@ -200,11 +207,14 @@ def auxiliary_latin_codes(scripts, source, font):
                     if split:
                         current = int(split.group(1))
                     continue
-                for inline in FONT_TAG.finditer(original):
-                    current = int(inline.group(1))
-                if current != font:
+                inline_fonts = [int(inline.group(1)) for inline in FONT_TAG.finditer(original)]
+                active = current == font or font in inline_fonts
+                if inline_fonts:
+                    current = inline_fonts[-1]
+                if not active:
                     continue
                 body = BACKSLASH_ESCAPE.sub("", INLINE_TAG.sub("", item["translated_text"]))
+                body = STAR_MACRO.sub(lambda m: macro_names[m.group(1) or m.group(2)], body)
                 needed.update(aliases[char][0] for char in body if 0x20 <= ord(char) <= 0x7E)
     return needed
 

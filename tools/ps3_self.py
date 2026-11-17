@@ -167,6 +167,8 @@ def decrypt_self(data: bytes) -> bytes:
         if end > len(data):
             raise ValueError("SELF segment data is out of bounds")
         payload = data[start:end]
+        if section["encrypted"] not in (1, 3):
+            raise ValueError(f"Unsupported SELF section encryption flag: {section['encrypted']}")
         if section["encrypted"] == 3:
             if section["key_index"] >= key_count or section["iv_index"] >= key_count:
                 raise ValueError("SELF segment references a missing data key")
@@ -174,6 +176,8 @@ def decrypt_self(data: bytes) -> bytes:
             segment_iv = data_keys[section["iv_index"] * 16:section["iv_index"] * 16 + 16]
             payload = ctr_crypt(segment_key, segment_iv, payload)
         program_header = program_headers[section["program_index"]]
+        if section["compressed"] not in (1, 2):
+            raise ValueError(f"Unsupported SELF section compression flag: {section['compressed']}")
         if section["compressed"] == 2:
             import zlib
             payload = zlib.decompress(payload)

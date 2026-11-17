@@ -129,10 +129,14 @@ def run(export, subset, *, write):
         if problems:
             per_file[path.name] = {"defects": len(problems), "written": False}
             continue
-        units = baseline
+        live_path = project.SCRIPTS / script
+        units = project.load(live_path) if live_path.is_file() else baseline
         changed = 0
         for record, value in zip(sidecar["records"], values):
+            orig = baseline[record["unit"]]["items"][record["item"]]["original_text"]
             item = units[record["unit"]]["items"][record["item"]]
+            if value == orig and item.get("translated_text") not in (None, orig):
+                continue
             if value != item.get("translated_text"):
                 item["translated_text"] = value
                 changed += 1

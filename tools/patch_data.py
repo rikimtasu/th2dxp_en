@@ -454,8 +454,25 @@ def summary(manifest):
             "archive_output_size": archive["output_dat_size"]}
 
 
+def _validate_source_variants(archive_spec):
+    variants = archive_spec.get("source_variants", [])
+    require(isinstance(variants, list), "Invalid archive source variants")
+    fields = {"source_sdat_sha256", "source_dat_sha256", "output_dat_sha256"}
+    hashes = {archive_spec.get("source_sdat_sha256")} - {None}
+    for variant in variants:
+        require(isinstance(variant, dict) and set(variant) == fields,
+                "Invalid archive source variant")
+        require(all(isinstance(variant[key], str) and len(variant[key]) == 64
+                    and all(c in "0123456789abcdef" for c in variant[key])
+                    for key in fields), "Invalid archive variant hash")
+        require(variant["source_sdat_sha256"] not in hashes,
+                "Duplicate archive source variant")
+        hashes.add(variant["source_sdat_sha256"])
+    return variants
+
+
 def build(pristine_elf, patched_elf, pristine_dat, patched_dat, output_dir, *,
-          pristine_sdat=None, patched_sdat=None, patch=None, log=print):
+          pristine_sdat=None, patched_sdat=None, source_variants=None, patch=None, log=print):
     """Write a complete patch folder and prove it rebuilds the staged artifacts."""
     output_dir = Path(output_dir)
     require(not output_dir.exists(), f"Refusing to overwrite an existing patch folder: {output_dir}")
@@ -465,6 +482,9 @@ def build(pristine_elf, patched_elf, pristine_dat, patched_dat, output_dir, *,
         f"{elf_section['edits_bytes']} B of edits and a {elf_section['tail_bytes']} B appended segment")
     archive_section = build_archive_patch(pristine_dat, patched_dat, output_dir,
                                           source_sdat=pristine_sdat, output_sdat=patched_sdat)
+    if source_variants is not None:
+        archive_section["source_variants"] = list(source_variants)
+        _validate_source_variants(archive_section)
     log(f"archive: {len(archive_section['replacements'])} rows "
         f"({sum(r['compressed_size'] for r in archive_section['replacements'])} B of chunks)")
 
@@ -481,10 +501,12 @@ def build(pristine_elf, patched_elf, pristine_dat, patched_dat, output_dir, *,
     return manifest
 
 
-def verify(patch_dir, pristine_elf, pristine_dat, *, log=print):
+def verify(patch_dir, pristine_elf, pristine_dat, *, variants=(), log=print):
     """Rebuild both artifacts from the patch folder and compare their hashes."""
     patch_dir = Path(patch_dir)
     manifest = load_manifest(patch_dir)
+    recorded_variants = {row["source_sdat_sha256"]: row
+                         for row in _validate_source_variants(manifest["archive"])}
     with tempfile.TemporaryDirectory(prefix="th2dxp-patch-") as temporary:
         temporary = Path(temporary)
         elf_target = temporary / "EBOOT.elf"
@@ -493,6 +515,12 @@ def verify(patch_dir, pristine_elf, pristine_dat, *, log=print):
         dat_target = temporary / "data.dat"
         dat = apply_archive_patch(pristine_dat, dat_target, patch_dir, manifest["archive"])
         log(f"verified archive: {dat['output_sha256']}")
+        for sdat_sha, variant_dat in variants:
+            require(sdat_sha in recorded_variants, f"Unknown archive source variant: {sdat_sha}")
+            spec = {**manifest["archive"], **recorded_variants[sdat_sha]}
+            variant_target = temporary / f"data-{sdat_sha[:8]}.dat"
+            rebuilt = apply_archive_patch(variant_dat, variant_target, patch_dir, spec)
+            log(f"verified variant archive ({sdat_sha[:8]}): {rebuilt['output_sha256']}")
     return elf, dat
 
 

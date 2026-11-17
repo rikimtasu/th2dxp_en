@@ -53,6 +53,7 @@ CHUNK = 4 * 1024 * 1024
 
 #: BLJM60381 retail data.sdat (the only file this tool will replace blindly).
 PRISTINE_SDAT_SHA256 = "4509a4e93e7e630e09971326d3e5f78e4c48a05e588e8c1ab9f0a88b174a9e3a"
+PRISTINE_SDAT_VARIANTS = ("389bf3cabdb9cdf3044b5be1dd4789c43be351f24bfa70a22e0d2e2fca5aa0f1",)
 PRISTINE_SDAT_SIZE = 2185195888
 
 
@@ -200,7 +201,7 @@ def classify_sdat(path, digest=None):
         return "absent"
     if path.stat().st_size == PRISTINE_SDAT_SIZE:
         digest = digest or sha256_file(path)
-        if digest == PRISTINE_SDAT_SHA256:
+        if digest == PRISTINE_SDAT_SHA256 or digest in PRISTINE_SDAT_VARIANTS:
             return "pristine"
     return "unknown"
 

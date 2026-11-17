@@ -1,5 +1,13 @@
 # Status — 2026-11-17
 
+## Code-review guard and installer fixes — 2026-11-17
+
+- Fixed cross-version `data.sdat` classification in `tools/patch_engine.py`: journaled installs now require `sdat_dat_sha256` to match the active manifest's `output_dat_sha256` (including backed-up `source_variants`), blocking mismatched older archives as `other_build` instead of silently skipping archive installation.
+- Updated `tools/ui_probe.py` and `tools/stage_english_build.py` to pin the post-v0.5 UI candidate template (`CANDIDATE_SHA256 = 01a8f8df…`) while keeping `production_engine.TEMPLATE_SHA256` (`a15f4f08…`) bound to the retained `build/gen-latin-reload-probe/EBOOT.elf` artifact.
+- Added the second verified retail `data.sdat` variant (`389bf3ca…`) to `tools/patch_game.py` (`PRISTINE_SDAT_VARIANTS`) and added `source_variants` schema/roundtrip verification to `tools/patch_data.py`.
+- Enforced private-use glyph (`U+E000..U+F8FF`), ASCII space-only, and `0x7F` guards in `tools/project.py` (`validate`) and `tools/choice_text.py` (`rebuild`); preserved existing `script/` translations across untranslated rows in `tools/import_gt_output.py`; handled inline `<G#>` font switches and `*nf`/`*nl`/`*nn`/`*h2` macros in `stage_english_build.auxiliary_latin_codes`; and rejected unknown section encryption/compression flags in `tools/ps3_self.py`.
+- Offline checks passed: **305 unit tests**, `project.validate(SCRIPTS, meta, allow_growth=True)` (`183,446` text records across `1,124` files), and `tools/update_glossary.py --check`. Existing builds, releases, scripts, baselines, and runtime QA state are unchanged.
+
 ## v0.7 published — 2026-11-17
 
 - Rebuilt from the current scripts after auditing all **1,124 editable script files** (**183,446 text records**) and applying **11,179 unique `translated_text` fixes across 466 files** (333 continuity, actor/addressee, quote/bracket, stray-Japanese, and typo fixes across 147 files; 10,856 missing inter-item space insertions across 410 files; manifests in `work/qa/translation-fixes-20261117/`), retaining the v0.5 UI/font corrections and 75% dialogue scale. Full bilingual semantic review remains incomplete.
