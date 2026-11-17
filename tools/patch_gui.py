@@ -75,6 +75,7 @@ KIND_LABELS = {
     "ELF": "pristine decrypted executable",
     "pristine": "original retail archive",
     "patched": "already patched file",
+    "other_build": "patched archive from another build",
     "unknown": "unrecognised file",
     "missing": "missing file",
 }

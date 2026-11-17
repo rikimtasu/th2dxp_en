@@ -32,6 +32,7 @@ import ui_graphics
 
 INPUT = project.ROOT / "build/typography-probe/EBOOT.elf"
 INPUT_SHA256 = "ce9da83e005d999e33966e45d449ac04d574cec867219fbb5176873826bb0f4c"
+CANDIDATE_SHA256 = "01a8f8df6be5d5fa5b8422eee669c4078ce28fb7e20c8a3d7fcdb3289cef2c0d"
 GRAPHICS = project.ROOT / "work/ui/ui-rendering-fixes-20261102"
 OUTPUT = project.ROOT / "build/gen-latin-reload-probe"
 FORM = project.ROOT / "work/qa/gen-latin-reload-results-to-fill.json"
@@ -156,7 +157,7 @@ def stage():
     replacements, graphics = graphics_inputs()
     candidate, report = assemble(source, kit, meta)
     native = report["native_layout"]
-    if report["output_sha256"] != production_engine.TEMPLATE_SHA256:
+    if report["output_sha256"] != CANDIDATE_SHA256:
         raise ValueError("UI candidate differs from the current reviewed native template pin")
     if native["ui_graphic_layout"]["graphics_manifest_sha256"] != graphics["manifest_sha256"]:
         raise ValueError("Native sprite geometry and readable atlas manifest are not paired")

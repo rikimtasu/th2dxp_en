@@ -159,17 +159,21 @@ def classify_archive(current, spec, journal):
     """
     if current == spec["source_sdat_sha256"]:
         return "pristine"
-    recorded = {row.get("sdat_sha256") for row in journal.get("installs", [])
-                if isinstance(row, dict)}
     backup = journal.get("backups", {}).get(patch_game.SDAT_NAME)
     if backup and current == backup.get("sha256"):
         return "pristine"
-    if current in recorded or current == spec.get("output_sdat_sha256"):
+    if current == spec.get("output_sdat_sha256"):
         return "patched"
+    recorded = [row for row in journal.get("installs", [])
+                if isinstance(row, dict) and row.get("sdat_sha256") == current]
+    if recorded:
+        if any(row.get("sdat_dat_sha256") == spec.get("output_dat_sha256") for row in recorded):
+            return "patched"
+        return "other_build"
     return "unknown"
 
 
-def select_archive_spec(spec, current):
+def select_archive_spec(spec, current, *, backup_sha=None):
     """Select only an explicitly pinned source variant, retaining common edits."""
     variants = spec.get("source_variants", [])
     require(isinstance(variants, list), "Invalid archive source variants")
@@ -185,7 +189,9 @@ def select_archive_spec(spec, current):
         require(variant["source_sdat_sha256"] not in hashes,
                 "Duplicate archive source variant")
         hashes.add(variant["source_sdat_sha256"])
-        if current == variant["source_sdat_sha256"]:
+        if current == variant["source_sdat_sha256"] or (
+                current != spec["source_sdat_sha256"]
+                and backup_sha == variant["source_sdat_sha256"]):
             selected = {**spec, **variant}
     return selected
 
@@ -233,12 +239,19 @@ def plan(build, usrdir, progress=None):
     else:
         archive["current_sha256"] = patch_game.sha256_file(
             sdat_path, _labelled(progress, f"Checking {patch_game.SDAT_NAME}"))
-        archive_spec = select_archive_spec(archive_spec, archive["current_sha256"])
+        backup = journal["backups"].get(patch_game.SDAT_NAME)
+        backup_sha = backup.get("sha256") if isinstance(backup, dict) else None
+        archive_spec = select_archive_spec(archive_spec, archive["current_sha256"],
+                                           backup_sha=backup_sha)
         manifest = {**manifest, "archive": archive_spec}
         archive["current_kind"] = classify_archive(archive["current_sha256"], archive_spec,
                                                    journal)
         archive["install"] = archive["current_kind"] != "patched"
-        if archive["install"] and archive["current_kind"] == "unknown":
+        if archive["install"] and archive["current_kind"] == "other_build":
+            blocked.append(
+                f"{patch_game.SDAT_NAME} is a patched archive from another build; "
+                "restore the original first")
+        elif archive["install"] and archive["current_kind"] == "unknown":
             blocked.append(
                 f"{patch_game.SDAT_NAME} is neither the pristine BLJM60381 archive nor a file "
                 "this tool installed. Restore your own dump (or use 'Restore original') first.")

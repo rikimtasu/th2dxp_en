@@ -51,6 +51,7 @@ class EngineTests(unittest.TestCase):
         self.salt = b"path-salt-in-npd"
 
         self.start(patch.object(patch_engine, "_invoke", side_effect=self.fake_invoke))
+        self.start(patch.object(patch_game, "rpcs3_running", return_value=False))
 
     def start(self, patcher):
         patcher.start()
@@ -145,6 +146,10 @@ class EngineTests(unittest.TestCase):
         self.write(self.usrdir / "data.sdat", alternate_sdat)
         self.assertEqual(self.plan()["blocked"], [])
         self.install()
+        post_plan = self.plan()
+        self.assertEqual(post_plan["blocked"], [])
+        self.assertTrue(post_plan["nothing_to_do"])
+        self.assertEqual(post_plan["archive"]["current_kind"], "patched")
         self.assertEqual((self.usrdir / "data.sdat").read_bytes()[144:], alternate_output)
         self.assertEqual((self.usrdir / patch_game.BACKUP_DIRNAME / "data.sdat").read_bytes(),
                          alternate_sdat)
@@ -179,6 +184,20 @@ class EngineTests(unittest.TestCase):
         self.write(self.usrdir / "EBOOT.BIN", elf_like(b"other-build", 2048, seed=9))
         plan = self.plan()
         self.assertTrue(any("another build" in text for text in plan["blocked"]))
+
+    def test_an_archive_from_another_build_blocks_with_restore_advice(self):
+        self.install()
+        journal = patch_game.read_journal(self.usrdir)
+        journal["installs"][-1]["sdat_dat_sha256"] = "0" * 64
+        patch_game.write_journal(self.usrdir, journal)
+        self.write(self.usrdir / "EBOOT.BIN", self.pristine_elf)
+        plan = self.plan()
+        self.assertEqual(plan["archive"]["current_kind"], "other_build")
+        self.assertTrue(plan["archive"]["install"])
+        self.assertTrue(any("data.sdat is a patched archive from another build" in text
+                            for text in plan["blocked"]))
+        with self.assertRaisesRegex(ValueError, "Cannot install"):
+            patch_engine.apply(plan)
 
     def test_patch_data_without_archive_hashes_is_refused(self):
         bare = self.root / "bare-patch"

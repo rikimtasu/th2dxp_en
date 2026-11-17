@@ -446,6 +446,8 @@ def main(argv):
     ruby_readings = suppress_ruby(changed, meta)
     apostrophes = canonicalize_english_apostrophes(changed)
     template, template_report = ui_probe.assemble(source, kit, meta)
+    if template_report["output_sha256"] != ui_probe.CANDIDATE_SHA256:
+        raise ValueError("UI candidate differs from the current reviewed native template pin")
     native = template_report["native_layout"]
     # Copy current source-guarded UI corrections, not the older retained UI geometry.
     # The temporary template is diagnostic only; production/manual pins stay unchanged.
